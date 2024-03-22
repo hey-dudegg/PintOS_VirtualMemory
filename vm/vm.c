@@ -16,6 +16,7 @@ vm_init (void) {
 	register_inspect_intr ();
 	/* DO NOT MODIFY UPPER LINES. */
 	/* TODO: Your code goes here. */
+	
 }
 
 /* Get the type of the page. This function is useful if you want to know the
@@ -137,6 +138,20 @@ vm_try_handle_fault (struct intr_frame *f UNUSED, void *addr UNUSED,
 	/* TODO: Validate the fault */
 	/* TODO: Your code goes here */
 
+	/*
+	Check if the memory reference is valid. 
+	locate the content that needs to go into the virtual memory page 
+	from the file, from the swap or can simply be all-zero page.
+	For shared page, the page can be already in the page frame, but not in the page table
+	Invalid access kill the process
+	Not valid user address
+	Kernel address
+	Permission error (attempt to write to the read-only page)
+	Allocate page frame.
+	Fetch the data from the disk to the page frame.
+	Update page table.
+	*/
+
 	return vm_do_claim_page (page);
 }
 
@@ -172,19 +187,28 @@ vm_do_claim_page (struct page *page) {
 }
 
 /* Initialize new supplemental page table */
-void
-supplemental_page_table_init (struct supplemental_page_table *spt UNUSED) {
+/* 보조 페이지 테이블을 초기화, process.c의 initd 함수로 새로운 프로세스가 시작되거나
+process.c의 __do_fork로 자식 프로세스가 생성될 때 함수가 호출 */
+void supplemental_page_table_init (struct supplemental_page_table *spt UNUSED) {
+		// install_page() -> va, pa mapping
+		hash_inti(&spt->spt_hash, page_hash, page_less, NULL);
+
 }
 
 /* Copy supplemental page table from src to dst */
-bool
-supplemental_page_table_copy (struct supplemental_page_table *dst UNUSED,
+/* 인자로 넘겨진 보조 페이지 테이블에서로부터 가상 주소(va)와 대응되는 페이지 구조체를 찾아서 반환
+실패했을 경우 NULL을 반환 */
+bool supplemental_page_table_copy (struct supplemental_page_table *dst UNUSED,
 		struct supplemental_page_table *src UNUSED) {
+
 }
 
 /* Free the resource hold by the supplemental page table */
-void
-supplemental_page_table_kill (struct supplemental_page_table *spt UNUSED) {
+/* 인자로 주어진 보조 페이지 테이블에 페이지 구조체를 삽입. 
+이 함수에서 주어진 보충 테이블에서 가상 주소의 존재 여부 검사 */
+void supplemental_page_table_kill (struct supplemental_page_table *spt UNUSED) {
 	/* TODO: Destroy all the supplemental_page_table hold by thread and
 	 * TODO: writeback all the modified contents to the storage. */
+
+
 }

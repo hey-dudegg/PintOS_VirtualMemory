@@ -20,6 +20,12 @@
  * linked list implementation.  Refer to lib/kernel/list.h for a
  * detailed explanation. */
 
+/* 해시 테이블. 이 데이터 구조는 Pintos 프로젝트 3의 Tour of Pintos에서 자세히 설명됩니다.
+이는 체이닝 방식의 표준 해시 테이블입니다. 테이블에서 요소를 찾으려면 요소의 데이터를 해시 함수로 계산하여
+이를 이중 연결 리스트 배열의 인덱스로 사용한 다음 리스트를 선형으로 탐색합니다.
+체인 리스트는 동적 할당을 사용하지 않습니다. 대신 해시에 포함 될 수있는 각 구조는 struct hash_elem 멤버를 포함해야합니다.
+모든 해시 함수는 이러한 'struct hash_elem'에 작동합니다. hash_entry 매크로는 struct hash_elem에서 구조체 객체로의 변환을 허용합니다.
+이는 연결된 목록 구현에서 사용되는 기술과 동일합니다. 자세한 설명은 lib/kernel/list.h를 참조하십시오. */
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -35,30 +41,38 @@ struct hash_elem {
  * name of the outer structure STRUCT and the member name MEMBER
  * of the hash element.  See the big comment at the top of the
  * file for an example. */
+
+/* 해시 요소 HASH_ELEM의 포인터를 HASH_ELEM이 내장 된 구조체의 포인터로 변환합니다.
+STRUCT의 이름과 해시 요소의 멤버인 MEMBER를 제공하십시오.
+파일 상단의 큰 주석을 참조하십시오. */
 #define hash_entry(HASH_ELEM, STRUCT, MEMBER)                   \
 	((STRUCT *) ((uint8_t *) &(HASH_ELEM)->list_elem        \
 		- offsetof (STRUCT, MEMBER.list_elem)))
 
 /* Computes and returns the hash value for hash element E, given
  * auxiliary data AUX. */
+/* 보조 데이터 AUX가 제공되는 경우 해시 요소 E의 해시 값을 계산하고 반환합니다. */
 typedef uint64_t hash_hash_func (const struct hash_elem *e, void *aux);
 
 /* Compares the value of two hash elements A and B, given
  * auxiliary data AUX.  Returns true if A is less than B, or
  * false if A is greater than or equal to B. */
+/* 보조 데이터 AUX가 제공되는 경우 두 해시 요소 A와 B의 값을 비교합니다.
+A가 B보다 작으면 true를 반환하고, 그렇지 않으면 false를 반환합니다. */
 typedef bool hash_less_func (const struct hash_elem *a,
 		const struct hash_elem *b,
 		void *aux);
 
 /* Performs some operation on hash element E, given auxiliary
  * data AUX. */
+/* 보조 데이터 AUX가 제공되는 경우 해시 요소 E에서 일부 작업을 수행합니다. */
 typedef void hash_action_func (struct hash_elem *e, void *aux);
 
 /* Hash table. */
 struct hash {
 	size_t elem_cnt;            /* Number of elements in table. */
 	size_t bucket_cnt;          /* Number of buckets, a power of 2. */
-	struct list *buckets;       /* Array of `bucket_cnt' lists. */
+	struct list *buckets;       /* 링크드 리스트 형식의 vm_entry. Array of `bucket_cnt' lists. */
 	hash_hash_func *hash;       /* Hash function. */
 	hash_less_func *less;       /* Comparison function. */
 	void *aux;                  /* Auxiliary data for `hash' and `less'. */

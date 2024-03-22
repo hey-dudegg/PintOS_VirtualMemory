@@ -58,6 +58,9 @@ bool check_addr(char* addr){
 	if(!addr || !is_user_vaddr(addr)|| !pml4_get_page(thread_current()->pml4,addr))
 		return false;
 	return true;
+
+	/* addr이 vm_entry에 존재하면 vm_entry를 반환하도록 코드 작성 */
+	/* find_vme () 사용 */
 }
 
 /* The main system call interface */
