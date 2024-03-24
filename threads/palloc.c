@@ -26,6 +26,14 @@
    half to the user pool.  That should be huge overkill for the
    kernel pool, but that's just fine for demonstration purposes. */
 
+/* 페이지 할당기. 페이지 크기 (또는 페이지의 배수)의 메모리를 할당합니다.
+작은 크기의 청크를 할당하는 할당기는 malloc.h를 참조하십시오.
+시스템 메모리는 커널 풀과 사용자 풀이라는 두 개의 "풀"로 나뉩니다.
+사용자 풀은 사용자(가상) 메모리 페이지를 위한 것이고, 커널 풀은 그 외의 모든 것을 위한 것입니다.
+여기서 아이디어는 사용자 프로세스가 미친듯이 스왑하더라도 커널이 자체 작업에 필요한 메모리를 가져야 한다는 것입니다.
+기본적으로 시스템 RAM의 절반은 커널 풀에, 절반은 사용자 풀에 할당됩니다.
+커널 풀에 대해서는 그것이 너무 많이 낭비되는 것이지만, 이것은 딱 좋은 데모 용도입니다. */
+
 /* A memory pool. */
 struct pool {
 	struct lock lock;               /* Mutual exclusion. */
@@ -259,15 +267,21 @@ palloc_init (void) {
    then the pages are filled with zeros.  If too few pages are
    available, returns a null pointer, unless PAL_ASSERT is set in
    FLAGS, in which case the kernel panics. */
-void *
-palloc_get_multiple (enum palloc_flags flags, size_t page_cnt) {
-	struct pool *pool = flags & PAL_USER ? &user_pool : &kernel_pool;
+   
+/* 연속된 PAGE_CNT 개의 빈 페이지 그룹을 획득하고 반환합니다.
+PAL_USER가 설정되어 있으면 페이지는 사용자 풀에서 획득되며, 그렇지 않으면 커널 풀에서 획득됩니다. 
+FLAGS에서 PAL_ZERO가 설정되어 있다면 페이지는 0으로 채워집니다. 
+사용 가능한 페이지가 너무 적은 경우, PAL_ASSERT가 FLAGS에 설정되어 있지 않은 경우에는 널 포인터를 반환하며, 
+그렇지 않으면 커널이 패닉 상태에 빠집니다. */
+void * palloc_get_multiple (enum palloc_flags flags, size_t page_cnt) {
+	struct pool *pool = flags & PAL_USER ? &user_pool : &kernel_pool;			// 풀을 선택한다.
 
 	lock_acquire (&pool->lock);
-	size_t page_idx = bitmap_scan_and_flip (pool->used_map, 0, page_cnt, false);
+	size_t page_idx = bitmap_scan_and_flip (pool->used_map, 0, page_cnt, false);// 사용 가능한 연속된 페이지 그룹을 찾고, 사용으로 표시
 	lock_release (&pool->lock);
+	
+	/* 할당된 페이지의 시작 주소를 계산 */
 	void *pages;
-
 	if (page_idx != BITMAP_ERROR)
 		pages = pool->base + PGSIZE * page_idx;
 	else
@@ -291,14 +305,18 @@ palloc_get_multiple (enum palloc_flags flags, size_t page_cnt) {
    then the page is filled with zeros.  If no pages are
    available, returns a null pointer, unless PAL_ASSERT is set in
    FLAGS, in which case the kernel panics. */
-void *
-palloc_get_page (enum palloc_flags flags) {
+   
+/* 하나의 빈 페이지를 획득하고 그것의 커널 가상 주소를 반환합니다.
+PAL_USER가 설정되어 있으면 페이지는 사용자 풀에서 획득되며, 그렇지 않으면 커널 풀에서 획득됩니다.
+FLAGS에서 PAL_ZERO가 설정되어 있다면 페이지는 0으로 채워집니다.
+사용 가능한 페이지가 없는 경우, PAL_ASSERT가 FLAGS에 설정되어 있지 않은 경우에는 널 포인터를 반환하며,
+그렇지 않으면 커널이 패닉 상태에 빠집니다. */
+void *palloc_get_page (enum palloc_flags flags) {
 	return palloc_get_multiple (flags, 1);
 }
 
 /* Frees the PAGE_CNT pages starting at PAGES. */
-void
-palloc_free_multiple (void *pages, size_t page_cnt) {
+void palloc_free_multiple (void *pages, size_t page_cnt) {
 	struct pool *pool;
 	size_t page_idx;
 
@@ -323,8 +341,7 @@ palloc_free_multiple (void *pages, size_t page_cnt) {
 }
 
 /* Frees the page at PAGE. */
-void
-palloc_free_page (void *page) {
+void palloc_free_page (void *page) {
 	palloc_free_multiple (page, 1);
 }
 

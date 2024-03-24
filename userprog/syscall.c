@@ -63,9 +63,15 @@ bool check_addr(char* addr){
 	/* find_vme () 사용 */
 }
 
+/* Project.3 용 */
+struct page *check_address(char* addr) {
+	if (is_kernel_vaddr(addr)) exit(-1);
+
+	return spt_find_page(&thread_current()->spt, addr);
+}
+
 /* The main system call interface */
-void
-syscall_handler (struct intr_frame *f UNUSED) {
+void syscall_handler (struct intr_frame *f UNUSED) {
 	// TODO: Your implementation goes here.
 	switch(f->R.rax){
 		case SYS_HALT:
@@ -97,11 +103,11 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		f->R.rax = filesize(f->R.rdi);
 		break;
 	case SYS_READ:
-		// if(!check_addr(f->R.rsi))
-		// 	exit(-1);
+		check_valid_buffer(f->R.rsi, f->R.rdx, f->rsp, 1);
 		f->R.rax = read(f->R.rdi,f->R.rsi,f->R.rdx);
 		break;
 	case SYS_WRITE:
+		check_valid_buffer(f->R.rsi, f->R.rdx, f->rsp, 0);
 		f->R.rax = write(f->R.rdi,f->R.rsi,f->R.rdx);
 		break;
 	case SYS_SEEK:
@@ -356,7 +362,7 @@ int read (int fd, void *buffer, unsigned length){
 }
 
 // /* STDIN:0 STDOUT:1*/
-int write (int fd, const void *buffer, unsigned length){
+int write (int fd, const void *buffer, unsigned length){		// 여기서 넘겨받는 buffer는 유저 가상 주소
 	if(check_addr(buffer) == 0)
 		exit(-1);
 	int bytes_written = 0;
@@ -419,4 +425,11 @@ void close (int fd){
 	del_fd(fd);
 }
 
+void check_valid_buffer (void *buffer, unsigned size, void* rsp, bool to_write) {
+	for (int i = 0; i < size; i++) {
+		struct page *page = check_address(buffer + i);
 
+		if (page == NULL) exit(-1);
+		if (to_write == true && page->writable == false) exit(-1);
+	}
+}

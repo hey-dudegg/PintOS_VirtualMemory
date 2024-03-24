@@ -6,8 +6,10 @@
 #include <stdint.h>
 #include "threads/interrupt.h"
 #include "threads/synch.h"
+
 #ifdef VM
 #include "vm/vm.h"
+
 #endif
 
 
@@ -126,14 +128,25 @@ struct thread {
 	struct intr_frame parent_if;
 
 
+/* pml4는 페이지 디렉토리를 가리키는 포인터다. 가상 주소 공간을 관리하는 데 사용되는 중요한 자료 구조다.
+각 페이지 디렉토리 엔트리는 페이지 테이블을 가리키며, 페이지 테이블은 물리 페이지와 가상 주소간의 매핑 정보를 저장
+pml4는 현재 스레드가 사용하는 페이지 디렉토리를 가리키므로, 가상 주소 공간에 접근할 때, 필요한 페이지 테이블의 위치를 알려준다.
+주로 메모리 관리 작업에 사용되며, 페이지 폴트나 가상 주소의 물리 주소로의 변환 시에 사용된다. */
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
 #endif
-// #ifdef VM
+
+/* spt에 있는 vaddr은 가상 주소를 의미한다. 가상 주소는 프로세스가 사용하는 메모리 주소 공간을 의미하며,
+프로세스가 실제로 메모리에 접근할 때 사용한다. va는 페이지 테이블을 통해 물리 주소로 변환되어야만
+실제 메모리에 접근할 수 있다. 페이지 폴트가 발생하면 페이지 테이블을 사용하여 가상 주소를 물리 주소로 매핑함. */
+
+#ifdef VM
 	/* Table for whole virtual memory owned by thread. */
-	uint64_t *pml4;						// pagedir(pml4)
 	struct supplemental_page_table spt;
+	void *stack_bottom;
+	void *rsp_stack;
+
 #endif
 
 	/* Owned by thread.c. */

@@ -43,28 +43,23 @@ struct hash_elem {
  * file for an example. */
 
 /* 해시 요소 HASH_ELEM의 포인터를 HASH_ELEM이 내장 된 구조체의 포인터로 변환합니다.
-STRUCT의 이름과 해시 요소의 멤버인 MEMBER를 제공하십시오.
-파일 상단의 큰 주석을 참조하십시오. */
+STRUCT의 이름과 해시 요소의 멤버인 MEMBER를 제공하십시오. 파일 상단의 큰 주석을 참조하십시오. */
 #define hash_entry(HASH_ELEM, STRUCT, MEMBER)                   \
 	((STRUCT *) ((uint8_t *) &(HASH_ELEM)->list_elem        \
 		- offsetof (STRUCT, MEMBER.list_elem)))
 
-/* Computes and returns the hash value for hash element E, given
- * auxiliary data AUX. */
+/* Computes and returns the hash value for hash element E, given auxiliary data AUX. */
 /* 보조 데이터 AUX가 제공되는 경우 해시 요소 E의 해시 값을 계산하고 반환합니다. */
 typedef uint64_t hash_hash_func (const struct hash_elem *e, void *aux);
 
-/* Compares the value of two hash elements A and B, given
- * auxiliary data AUX.  Returns true if A is less than B, or
- * false if A is greater than or equal to B. */
+/* Compares the value of two hash elements A and B, given auxiliary data AUX. 
+   Returns true if A is less than B, or false if A is greater than or equal to B. */
 /* 보조 데이터 AUX가 제공되는 경우 두 해시 요소 A와 B의 값을 비교합니다.
 A가 B보다 작으면 true를 반환하고, 그렇지 않으면 false를 반환합니다. */
 typedef bool hash_less_func (const struct hash_elem *a,
-		const struct hash_elem *b,
-		void *aux);
+		const struct hash_elem *b, void *aux);
 
-/* Performs some operation on hash element E, given auxiliary
- * data AUX. */
+/* Performs some operation on hash element E, given auxiliary data AUX. */
 /* 보조 데이터 AUX가 제공되는 경우 해시 요소 E에서 일부 작업을 수행합니다. */
 typedef void hash_action_func (struct hash_elem *e, void *aux);
 
@@ -76,6 +71,8 @@ struct hash {
 	hash_hash_func *hash;       /* Hash function. */
 	hash_less_func *less;       /* Comparison function. */
 	void *aux;                  /* Auxiliary data for `hash' and `less'. */
+
+	struct hash_elem *elem;
 };
 
 /* A hash table iterator. */

@@ -5,7 +5,8 @@
 
 enum vm_type {
 	/* page not initialized */
-	VM_UNINIT = 0,						// VM_BIN, 바이너리 파일로부터 데이터를 로드
+	// VM_BIN, 바이너리 파일로부터 데이터를 로드
+	VM_UNINIT = 0,						
 	/* page not related to the file, aka anonymous page */
 	VM_ANON = 1,
 	/* page that realated to the file */
@@ -28,12 +29,15 @@ enum vm_type {
 #include "vm/anon.h"
 #include "vm/file.h"
 #include "include/lib/kernel/hash.h"
+#include "list.h"
+
 #ifdef EFILESYS
 #include "filesys/page_cache.h"
 #endif
 
 struct page_operations;
 struct thread;
+struct list frame_table;
 
 #define VM_TYPE(type) ((type) & 7)
 
@@ -48,6 +52,8 @@ struct page {
 	struct frame *frame;   /* Back reference for frame */
 
 	/* Your implementation */
+	struct hash_elem hash_elem;	// 해시 테이블 element
+	bool writable;				// True -> 쓰기 가능, False -> 읽기만 가능
 
 	/* Per-type data are binded into the union.
 	 * Each function automatically detects the current union */
@@ -66,6 +72,7 @@ struct page {
 struct frame {
 	void *kva;
 	struct page *page;
+	struct list_elem frame_elem;
 };
 
 /* The function table for page operations.
@@ -98,8 +105,7 @@ struct supplemental_page_table {
 	bool is_loaded;				// 물리 메모리의 탑재 여부를 알려주는 플래그
 
 	/* vm_entry를 위한 자료구조 */
-	struct hash hash;
-	struct hash_elem hash_elem;	// 해시 테이블 element
+	struct hash pages;
 
 	/* VA initialize */
 	struct file* file;			// 가상 주소와 맵핑된 파일
@@ -107,7 +113,6 @@ struct supplemental_page_table {
 	uint8_t type;				// VM_BIN, VM_FILE, VM_ANON
 	size_t read_bytes;			// 가상페이지에 쓰여져 있는 데이터의 크기
 	size_t zero_bytes;			// 0으로 채울 남은 페이지의 바이트
-	bool writable;				// True -> 쓰기 가능, False -> 읽기만 가능
 
 	/* Memory Mapped File */
 	struct list_elem mmap_elem;	// mmap 리스트 element	
@@ -160,5 +165,20 @@ bool vm_alloc_page_with_initializer (enum vm_type type, void *upage,
 void vm_dealloc_page (struct page *page);
 bool vm_claim_page (void *va);
 enum vm_type page_get_type (struct page *page);
+
+/* Return true if page a precedes page b */
+bool page_less (const struct hash_elem *a_, const struct hash_elem *b_, void *aux UNUSED);
+
+/* Return the page containing the given virtual address, or a null pointer if no such page exists. */
+struct page *page_lookup (const void *address);
+
+/* page를 hash 테이블에 요소로 넣음 */
+bool insert_page (struct hash *hash, struct page *p);
+
+/* page를 hash 테이블의 요소에서 제거함 */
+bool delete_page (struct hash *hash, struct page *page);
+
+/* 해시 테이블을 초기화할 때 해시 값을 구해주는 함수의 포인터 */
+unsigned page_hash (const struct hash_elem *p_, void *aux UNUSED);
 
 #endif  /* VM_VM_H */

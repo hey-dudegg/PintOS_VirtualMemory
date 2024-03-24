@@ -29,10 +29,12 @@
 #define PTE_ADDR(pte) ((uint64_t) (pte) & ~0xFFF)
 
 /* The important flags are listed below.
-   When a PDE or PTE is not "present", the other flags are
-   ignored.
-   A PDE or PTE that is initialized to 0 will be interpreted as
-   "not present", which is just fine. */
+   When a PDE or PTE is not "present", the other flags are ignored.
+   A PDE or PTE that is initialized to 0 will be interpreted as "not present", which is just fine. */
+
+/* 중요한 플래그들은 아래에 나열되어 있습니다.
+PDE 또는 PTE가 "present"되지 않은 경우, 다른 플래그들은 무시됩니다.
+0으로 초기화된 PDE 또는 PTE는 "present"되지 않은 것으로 해석될 것이며, 이는 괜찮습니다. */
 #define PTE_FLAGS 0x00000000000000fffUL    /* Flag bits. */
 #define PTE_ADDR_MASK  0xffffffffffffff000UL /* Address bits. */
 #define PTE_AVL   0x00000e00             /* Bits available for OS use. */

@@ -24,6 +24,9 @@ typedef unsigned long elem_type;
 /* From the outside, a bitmap is an array of bits.  From the
    inside, it's an array of elem_type (defined above) that
    simulates an array of bits. */
+   
+/* 외부에서 보면 비트맵은 비트 배열입니다. 내부에서는 위에서 정의한 elem_type의 배열로,
+비트 배열을 시뮬레이션합니다. */
 struct bitmap {
 	size_t bit_cnt;     /* Number of bits. */
 	elem_type *bits;    /* Elements that represent bits. */
@@ -289,8 +292,11 @@ bitmap_scan (const struct bitmap *b, size_t start, size_t cnt, bool value) {
    If CNT is zero, returns 0.
    Bits are set atomically, but testing bits is not atomic with
    setting them. */
-size_t
-bitmap_scan_and_flip (struct bitmap *b, size_t start, size_t cnt, bool value) {
+
+   /* B에서 START 이후로 VALUE로 설정된 CNT 개의 연속된 비트 그룹을 찾아서 모두 !VALUE로 뒤집고, 해당 그룹의 첫 번째 비트의 
+   인덱스를 반환합니다. 이러한 그룹이 없는 경우, BITMAP_ERROR를 반환합니다. CNT가 0이면 0을 반환합니다.
+   비트는 원자적으로 설정되지만, 비트를 테스트하는 것은 설정하는 것과 원자적으로 이루어지지 않습니다. */
+size_t bitmap_scan_and_flip (struct bitmap *b, size_t start, size_t cnt, bool value) {
 	size_t idx = bitmap_scan (b, start, cnt, value);
 	if (idx != BITMAP_ERROR)
 		bitmap_set_multiple (b, idx, cnt, !value);
