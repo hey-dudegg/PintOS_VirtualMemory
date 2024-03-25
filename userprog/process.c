@@ -542,7 +542,6 @@ static bool load (const char *file_name, struct intr_frame *if_) {
 	bool success = false;
 	int i;
 
-
 	/* Allocate and activate page directory. */
 	t->pml4 = pml4_create ();				// 여기서 프로세스의 PML4가 생성된다.
 	if (t->pml4 == NULL)
@@ -763,7 +762,7 @@ ELF 파일의 진입점(entry point)을 설정합니다.
 전체 프로젝트 2를 위해 함수를 구현하려면 #ifndef 매크로 외부에 구현하십시오. */
 
 /* load() 도우미 함수. */
-static bool install_page (void *upage, void *kpage, bool writable);
+// static bool install_page (void *upage, void *kpage, bool writable);
 
 /* Loads a segment starting at offset OFS in FILE at address
  * UPAGE.  In total, READ_BYTES + ZERO_BYTES bytes of virtual
@@ -877,19 +876,19 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 }
 
 /* Create a minimal stack by mapping a zeroed page at the USER_STACK */
-/* 이 코드는 사용자 스택을 설정하기 위해 호출되는 함수입니다.
+/* 이 코드는 주어진 인터럽트 프레임을 기준으로 사용자 스택을 설정하기 위해 호출되는 함수입니다.
 사용자 스택은 새 프로세스의 초기 스택을 나타내며, 사용자 프로그램이 함수 호출 및 로컬 변수를 저장하는 데 사용됩니다. */
 static bool setup_stack (struct intr_frame *if_) {
 	// uint8_t *kpage;
 	bool success = false;
-	void *stack_bottom = (void *) (((uint8_t) USER_STACK) - PGSIZE);
+	void *stack_bottom = (void *) (((uint8_t) USER_STACK) - PGSIZE);	// 사용자 스택을 나타내는 가장 주소 획득
 
-	if (vm_alloc_page (VM_ANON | VM_MARKER_0, stack_bottom, 1)) {
-		success = vm_claim_page (stack_bottom);
+	if (vm_alloc_page (VM_ANON | VM_MARKER_0, stack_bottom, 1)) {		// 할당된 페이지를 매핑시키고 페이지 테이블에 등록
+		success = vm_claim_page (stack_bottom);	
 
 		if (success) {
-			if_->rsp = USER_STACK;
-			thread_current()->stack_bottom = stack_bottom;
+			if_->rsp = USER_STACK;				// 현재 스레드의 스택 포인터를 USER_STACK으로 설정
+			thread_current()->stack_bottom = stack_bottom;	
 		}
 	}
 
@@ -954,6 +953,15 @@ static bool install_page (void *upage, void *kpage, bool writable) {
 }
 
 #else
+bool install_page (void *upage, void *kpage, bool writable) {
+	struct thread *t = thread_current ();
+
+	/* Verify that there's not already a page at that virtual
+	 * address, then map our page there. */
+	/* 해당 가상 주소에 이미 페이지가 있는지 확인한 후 페이지를 매핑합니다. */
+	return (pml4_get_page (t->pml4, upage) == NULL
+			&& pml4_set_page (t->pml4, upage, kpage, writable));
+}
 /* From here, codes will be used after project 3.
  * If you want to implement the function for only project 2, implement it on the
  * upper block. */
@@ -979,7 +987,7 @@ static bool lazy_load_segment (struct page *page, void *aux) {
 		return false;
 	}
 	
-	memset (page->frame->kva + page_read_bytes, 0, page_zero_bytes);
+	memset ((page->frame->kva + page_read_bytes), 0, page_zero_bytes);
 
 	return true;
 	/* TODO: 이 함수가 호출될 때 VA 주소에서 첫 번째 페이지 폴트가 발생합니다. */
@@ -1042,8 +1050,9 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 		spt->offset = ofs;
 
 		if (!vm_alloc_page_with_initializer (VM_ANON, upage,
-					writable, lazy_load_segment, spt)) return false;
-
+					writable, lazy_load_segment, spt)) 
+			return false;
+			
 		/* Advance. */
 		read_bytes -= page_read_bytes;
 		zero_bytes -= page_zero_bytes;
@@ -1067,6 +1076,14 @@ static bool setup_stack (struct intr_frame *if_) {
 	 * 성공하면 rsp를 적절히 설정합니다.
 	 * 페이지를 스택으로 표시해야 합니다. */
 	/* 여기에 코드를 작성하세요 */
+	if (vm_alloc_page (VM_ANON | VM_MARKER_0, stack_bottom, 1)) {
+		success = vm_claim_page (stack_bottom);
+
+		if (success) {
+			if_->rsp = USER_STACK;
+			thread_current()->stack_bottom = stack_bottom;
+		}
+	}
 
 	return success;
 }

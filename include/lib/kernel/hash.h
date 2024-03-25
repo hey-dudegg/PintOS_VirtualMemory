@@ -72,7 +72,7 @@ struct hash {
 	hash_less_func *less;       /* Comparison function. */
 	void *aux;                  /* Auxiliary data for `hash' and `less'. */
 
-	struct hash_elem *elem;
+	// struct hash_elem *elem;
 };
 
 /* A hash table iterator. */
