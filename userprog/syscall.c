@@ -96,6 +96,7 @@ void syscall_handler (struct intr_frame *f UNUSED) {
 		f->R.rax = remove(f->R.rdi);
 		break;
 	case SYS_OPEN:
+	// printf("====================================\n");
 		f->R.rax = open(f->R.rdi);
 
 		break;
@@ -149,16 +150,20 @@ int exec (const char *cmd_line){
 	// if(open_file == NULL){
 	// 	return -1;
 	// }
+	// printf("============================\n");
 	if(!check_addr(cmd_line))
 		exit(-1);
 	// int size = strlen(cmd_line) + 1;
 	char *cmd_line_copy;
 	cmd_line_copy = palloc_get_page(0);
 	if (cmd_line_copy == NULL)
+		// printf("============================\n");
 		exit(-1);
 	strlcpy (cmd_line_copy, cmd_line, PGSIZE);
-	if (process_exec(cmd_line_copy) == -1)
+	if (process_exec(cmd_line_copy) == -1){
+		// printf("============================\n");
 		exit(-1);
+		}
 }
 
 int wait (pid_t child_tid){
@@ -280,6 +285,7 @@ bool remove (const char *file){
 
 int open (const char *file){
 	if(!check_addr(file))
+	// printf("====================================\n");
 			exit(-1);
 	// // if(file == NULL){
 	// // 	exit(-1);
@@ -297,7 +303,7 @@ int open (const char *file){
 	// 	return fd;
 	// }
 	struct file *f = filesys_open(file);
-
+	// printf("====================================\n");
 	if (f == NULL)
 		return -1;
 

@@ -238,12 +238,15 @@ parse_options (char **argv) {
 static void
 run_task (char **argv) {
 	const char *task = argv[1];
-
+	// printf("====================================\n");
 	printf ("Executing '%s':\n", task);
 #ifdef USERPROG
 	if (thread_tests){
+		// printf("==================1==================\n");
 		run_test (task);
 	} else {
+		// printf("==================2==================\n");
+		// printf("==================%s==================\n", argv[1]);
 		process_wait (process_create_initd (task));
 	}
 #else
@@ -279,7 +282,7 @@ run_actions (char **argv) {
 	while (*argv != NULL) {
 		const struct action *a;
 		int i;
-
+		// printf("=================================\n");
 		/* Find action name. */
 		for (a = actions; ; a++)
 			if (a->name == NULL)
@@ -295,6 +298,7 @@ run_actions (char **argv) {
 		/* Invoke action and advance. */
 		a->function (argv);
 		argv += a->argc;
+		// printf("=================================\n");
 	}
 
 }

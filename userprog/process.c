@@ -62,6 +62,7 @@ tid_t process_create_initd (const char *file_name) {
 
 	/* Create a new thread to execute FILE_NAME. */
 	tid = thread_create (token, PRI_DEFAULT, initd, fn_copy);
+	// printf("==================%d==================\n", tid);
 	if (tid == TID_ERROR)
 		palloc_free_page (fn_copy);
 	return tid;
@@ -253,7 +254,7 @@ process_exec (void *f_name) {
 	/* And then load the binary */
 	lock_acquire(&filesys_lock);
 	success = load (token, &_if);
-	
+	// printf("=============%s===============\n", file_name);
 	palloc_free_page(fn_copy);
 	
 	lock_release(&filesys_lock);
@@ -320,7 +321,7 @@ process_exec (void *f_name) {
 	palloc_free_page (file_name);
 	// if (!success)
 	// 	return -1;
-
+	// printf("=============%s===============\n", file_name);
 	// hex_dump(_if.rsp, _if.rsp, USER_STACK - _if.rsp, true);
 	/* Start switched process. */
 	do_iret (&_if);
@@ -624,7 +625,7 @@ static bool load (const char *file_name, struct intr_frame *if_) {
 						read_bytes = 0;
 						zero_bytes = ROUND_UP (page_offset + phdr.p_memsz, PGSIZE);
 					}
-					
+					// printf("=====================\n");
 					if (!load_segment (file, file_page, (void *) mem_page,
 								read_bytes, zero_bytes, writable))
 								// printf("=====================\n");
@@ -638,11 +639,12 @@ static bool load (const char *file_name, struct intr_frame *if_) {
 	/* file_deny_write*/
 	t->exec_file=file;
     file_deny_write(file);
-
+	// printf("=====================\n");
 	/* Set up stack. */
 	if (!setup_stack (if_))
+	// printf("=====================\n");
 		goto done;
-
+	
 	/* Start address. */
 	if_->rip = ehdr.e_entry;
 
@@ -882,16 +884,18 @@ static bool setup_stack (struct intr_frame *if_) {
 	// uint8_t *kpage;
 	bool success = false;
 	void *stack_bottom = (void *) (((uint8_t) USER_STACK) - PGSIZE);	// 사용자 스택을 나타내는 가장 주소 획득
-
+	
 	if (vm_alloc_page (VM_ANON | VM_MARKER_0, stack_bottom, 1)) {		// 할당된 페이지를 매핑시키고 페이지 테이블에 등록
 		success = vm_claim_page (stack_bottom);	
-
+		// printf("===========%d==========\n",success);
 		if (success) {
+			// printf("=====================\n");
 			if_->rsp = USER_STACK;				// 현재 스레드의 스택 포인터를 USER_STACK으로 설정
 			thread_current()->stack_bottom = stack_bottom;	
 		}
 	}
 
+	return success;
 /*페이지 할당 함수를 사용하여 사용자 페이지를 가져옵니다.
 PAL_USER 플래그는 사용자 영역에 페이지를 할당하고, PAL_ZERO 플래그는 페이지를 0으로 초기화합니다. */
 	// kpage = palloc_get_page (PAL_USER | PAL_ZERO);
@@ -915,8 +919,6 @@ PAL_USER 플래그는 사용자 영역에 페이지를 할당하고, PAL_ZERO �
 	* 그런 다음, 생성된 vm_entry의 필드 값을 초기화해야 합니다.
 	* 마지막으로, 초기화한 vm_entry를 해시 테이블에 삽입하여 스택 메모리를 추적할 수 있도록 합니다.
 	*/
-
-	return success;
 }
 
 /* Adds a mapping from user virtual address UPAGE to kernel
@@ -1044,6 +1046,8 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 		// void *aux = NULL;
 		struct supplemental_page_table *spt = (struct supplemental_page_table *) malloc 
 													(sizeof(struct supplemental_page_table));
+		
+		ASSERT(file);
 		
 		spt->file = file;
 		spt->read_bytes = page_read_bytes;

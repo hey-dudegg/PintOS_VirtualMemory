@@ -261,6 +261,7 @@ thread_create (const char *name, int priority,
 	struct thread *t;
 	tid_t tid;
 
+	// printf("==================%s==================\n", thread_current()->name);
 	ASSERT (function != NULL);
 
 	/* Allocate thread. */
@@ -305,7 +306,7 @@ thread_create (const char *name, int priority,
 	// printf("[DBG] {%s} palloc result : %p\n", t->name, t->fdt); ////
     if (t->fdt == NULL) 
         return TID_ERROR; 
-	
+	// printf("==================%s==================\n", thread_current()->name);
 	return tid;
 }
 
@@ -556,6 +557,8 @@ init_thread (struct thread *t, const char *name, int priority) {
 	sema_init(&t->exit_sema,0);
 
 	sema_init(&t->child_load_sema,0);
+
+	// printf("==================%s==================\n", t->name);
 
 	t->fd_idx = 2;
 	// t->fdt[0] = 0;
