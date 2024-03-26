@@ -27,6 +27,17 @@ static void page_fault (struct intr_frame *);
 
    Refer to [IA32-v3a] section 5.15 "Exception and Interrupt
    Reference" for a description of each of these exceptions. */
+
+/* 사용자 프로그램에 의해 발생할 수 있는 인터럽트에 대한 핸들러를 등록합니다.
+
+   실제 Unix와 유사한 OS에서는 이러한 대부분의 인터럽트가
+   [SV-386] 3-24 및 3-25에서 설명한대로 시그널 형태로 사용자 프로세스로 전달되지만,
+   우리는 시그널을 구현하지 않습니다. 대신, 이들을 단순히 사용자 프로세스를 종료시킵니다.
+
+   페이지 폴트는 예외입니다. 여기서는 다른 예외와 마찬가지로 처리되지만,
+   가상 메모리를 구현하려면 이를 변경해야 할 것입니다.
+
+   각 예외에 대한 설명은 [IA32-v3a] 섹션 5.15 "Exception and Interrupt Reference"를 참조하십시오. */
 void
 exception_init (void) {
 	/* These exceptions can be raised explicitly by a user program,
@@ -42,6 +53,9 @@ exception_init (void) {
 	   invoking them via the INT instruction.  They can still be
 	   caused indirectly, e.g. #DE can be caused by dividing by
 	   0.  */
+
+	   /* 이러한 예외들은 DPL이 0이므로 사용자 프로세스가 INT 명령을 통해 직접 호출하는 것을 방지합니다.
+	   그들은 여전히 간접적으로 발생할 수 있습니다. 예를 들어, #DE는 0으로 나누기로 인해 발생할 수 있습니다. */
 	intr_register_int (0, 0, INTR_ON, kill, "#DE Divide Error");
 	intr_register_int (1, 0, INTR_ON, kill, "#DB Debug Exception");
 	intr_register_int (6, 0, INTR_ON, kill, "#UD Invalid Opcode Exception");
@@ -57,6 +71,8 @@ exception_init (void) {
 	/* Most exceptions can be handled with interrupts turned on.
 	   We need to disable interrupts for page faults because the
 	   fault address is stored in CR2 and needs to be preserved. */
+	   /* 대부분의 예외는 인터럽트가 켜진 상태에서 처리할 수 있습니다.
+   페이지 폴트의 경우 CR2에 오류 주소가 저장되어야 하므로 인터럽트를 비활성화해야 합니다. */
 	intr_register_int (14, 0, INTR_OFF, page_fault, "#PF Page-Fault Exception");
 }
 
@@ -115,6 +131,17 @@ static void kill (struct intr_frame *f) {
    can find more information about both of these in the
    description of "Interrupt 14--Page Fault Exception (#PF)" in
    [IA32-v3a] section 5.15 "Exception and Interrupt Reference". */
+
+   
+/* 페이지 폴트 핸들러. 이것은 가상 메모리를 구현하기 위해 채워야 하는 뼈대 코드입니다.
+프로젝트 2의 일부 솔루션도 이 코드를 수정해야 할 수 있습니다.
+
+진입 시, 폴트가 발생한 주소는 CR2(Control Register 2)에 있고,
+폴트에 관한 정보는 exception.h의 PF_* 매크로에 설명된대로
+F의 error_code 멤버에 포맷되어 있습니다. 여기에 있는 예제 코드는
+해당 정보를 어떻게 구문 분석하는지 보여줍니다.
+"Interrupt 14--Page Fault Exception (#PF)" 섹션의
+[IA32-v3a]에서 더 많은 정보를 찾을 수 있습니다. */
 static void page_fault (struct intr_frame *f) {
 	bool not_present;  /* True: not-present page, false: writing r/o page. */
 	bool write;        /* True: access was write, false: access was read. */
@@ -125,11 +152,15 @@ static void page_fault (struct intr_frame *f) {
 	   accessed to cause the fault.  It may point to code or to
 	   data.  It is not necessarily the address of the instruction
 	   that caused the fault (that's f->rip). */
-
+	/* 페이지 폴트를 발생시킨 가상 주소를 가져옵니다.
+	   폴트를 발생시킨 가상 주소는 코드나 데이터를 가리킬 수 있습니다.
+   이것은 반드시 폴트를 발생시킨 명령어의 주소가 아닐 수 있습니다 (그것은 f->rip에 저장됩니다). */
 	fault_addr = (void *) rcr2();
 
 	/* Turn interrupts back on (they were only off so that we could
 	   be assured of reading CR2 before it changed). */
+	/* 인터럽트를 다시 활성화합니다.
+	(인터럽트가 비활성화된 이유는 CR2를 변경되기 전에 읽을 수 있도록 하기 위함입니다.) */
 	intr_enable ();
 	
 	/* Determine cause. */

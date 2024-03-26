@@ -33,6 +33,8 @@ static void __do_fork (void *);
 struct thread *find_child(tid_t child_tid);
 
 /* General process initializer for initd and other process. */
+/* process_init 함수는 Pintos의 initd 및 다른 프로세스를 위한 일반적인 프로세스 초기화를 수행합니다.
+현재 스레드의 포인터를 가져와서 현재 프로세스의 초기화 작업을 수행합니다.  */
 static void process_init (void) {
 	struct thread *current = thread_current ();
 }
@@ -43,7 +45,7 @@ static void process_init (void) {
  * thread id, or TID_ERROR if the thread cannot be created.
  * Notice that THIS SHOULD BE CALLED ONCE. */
 
-/* 첫 번째 유저랜드 프로그램인 "initd"를 시작합니다. 이 프로그램은 FILE_NAME에서 로드됩니다.
+/* 첫 번째 유저랜드(사용자 영역) 프로그램인 "initd"를 시작합니다. 이 프로그램은 FILE_NAME에서 로드됩니다.
 새로운 스레드는 process_create_initd()가 반환되기 전에 스케줄될 수 있으며 (심지어 종료될 수도 있음),
 initd의 스레드 ID를 반환하거나 스레드가 생성되지 않은 경우 TID_ERROR를 반환합니다.
 이 함수는 한 번만 호출되어야 합니다. */
@@ -225,14 +227,17 @@ error:
 
 /* Switch the current execution context to the f_name.
  * Returns -1 on fail. */
-int
-process_exec (void *f_name) {
+/* 현재 실행 컨텍스트를 f_name으로 전환합니다. 실패한 경우 -1을 반환합니다. */
+int process_exec (void *f_name) {
 	char *file_name = f_name;
 	bool success;
 
 	/* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
 	 * it stores the execution information to the member. */
+
+	/* 현재 스레드가 다시 스케줄되면 실행 정보를 해당 구성원에
+	저장하기 때문에 스레드 구조체의 intr_frame을 사용할 수 없습니다. */
 	struct intr_frame _if;
 	_if.ds = _if.es = _if.ss = SEL_UDSEG;
 	_if.cs = SEL_UCSEG;
@@ -552,7 +557,7 @@ static bool load (const char *file_name, struct intr_frame *if_) {
 
 	/* Open executable file. */
 	
-	file = filesys_open (file_name);
+	file = filesys_open (file_name);		// 파일을 열어 내부 메모리(커널의 가상 메모리 공간)에 할당한다.
 	
 
 	if (file == NULL) {
@@ -563,6 +568,11 @@ static bool load (const char *file_name, struct intr_frame *if_) {
 	
 
 	/* Read and verify executable header. */
+	/*
+	실행 파일의 헤더를 읽고 유효성을 검사하는 과정을 수행합니다.
+	주어진 파일이 ELF(Executable and Linkable Format) 형식의 실행 파일인지 확인하기 위해 해당 파일의 헤더를 읽어들입니다.
+	그리고 다음의 조건을 확인하여 유효한 실행 파일인지를 판단합니다.
+	*/
 	if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
 			|| memcmp (ehdr.e_ident, "\177ELF\2\1\1", 7)
 			|| ehdr.e_type != 2
@@ -572,6 +582,16 @@ static bool load (const char *file_name, struct intr_frame *if_) {
 			|| ehdr.e_phnum > 1024) {
 		printf ("load: %s: error loading executable\n", file_name);
 		
+		/*
+		1. 파일 헤더가 정상적으로 읽혔는지 확인합니다.
+		2. ELF 매직 넘버를 확인하여 ELF 형식의 실행 파일인지 확인합니다.
+		3. 실행 파일의 형식(Executable Type)이 2인지 확인합니다. 이 값은 ELF 형식의 실행 파일임을 나타냅니다.
+		4. 실행 파일의 아키텍처(Machine)가 0x3E(amd64)인지 확인합니다.
+		5. ELF 버전이 1인지 확인합니다.
+		6. 프로그램 헤더 엔트리의 크기가 예상된 크기와 일치하는지 확인합니다.
+		7. 프로그램 헤더 엔트리의 수가 적절한 범위 내에 있는지 확인합니다.
+		*/
+
 		goto done;
 	}
 
@@ -638,10 +658,10 @@ static bool load (const char *file_name, struct intr_frame *if_) {
 	}
 	/* file_deny_write*/
 	t->exec_file=file;
-    file_deny_write(file);
+    file_deny_write(file);				// 파일을 읽기 전용으로 설정.
 	// printf("=====================\n");
 	/* Set up stack. */
-	if (!setup_stack (if_))
+	if (!setup_stack (if_))				// 피지컬 메모리에 페이지로 할당.
 	// printf("=====================\n");
 		goto done;
 	
@@ -879,7 +899,8 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 
 /* Create a minimal stack by mapping a zeroed page at the USER_STACK */
 /* 이 코드는 주어진 인터럽트 프레임을 기준으로 사용자 스택을 설정하기 위해 호출되는 함수입니다.
-사용자 스택은 새 프로세스의 초기 스택을 나타내며, 사용자 프로그램이 함수 호출 및 로컬 변수를 저장하는 데 사용됩니다. */
+사용자 스택은 새 프로세스의 초기 스택을 나타내며, 사용자 프로그램이 함수 호출 및 로컬 변수를 저장하는 데 사용.
+새로운 프로세스가 실행될 때 필요한 스택을 설정하고, 스택에 필요한 초기화된 상태와 인자들을 전달하는 작업을 수행 */
 static bool setup_stack (struct intr_frame *if_) {
 	// uint8_t *kpage;
 	bool success = false;
@@ -970,6 +991,17 @@ bool install_page (void *upage, void *kpage, bool writable) {
 
 /* 여기부터는 프로젝트 3 이후에 사용될 코드입니다.
  * 프로젝트 2에서만 해당 기능을 구현하려면, 위의 블록에 구현하십시오. */
+
+/* lazy loading은 메모리 로딩이 필요한 시점까지 지연되는 디자인
+가상 page만 할당해두고 필요한 page를 요청하면 page fault가 발생하고 해당 page를 type에 맞게 초기화하고
+frame과 연결하고 userprogram으로 제어권을 넘긴다.
+
+* 작동 과정
+파일 오프셋을 지정된 위치로 이동시킵니다.
+파일에서 읽어들인 데이터를 페이지 프레임의 커널 가상 주소(page->frame->kva)에 씁니다.
+세그먼트의 나머지 부분을 0으로 초기화합니다(필요한 경우).
+함수가 호출될 때 제공된 가상 주소(VA)가 첫 번째 페이지 폴트가 발생한 위치입니다.
+이 위치의 페이지를 로드하고 해당 페이지가 가리키는 프레임에 데이터를 씁니다. */
 static bool lazy_load_segment (struct page *page, void *aux) {
 	/* TODO: Load the segment from the file */
 	/* TODO: This called when the first page fault occurs on address VA. */
@@ -981,9 +1013,9 @@ static bool lazy_load_segment (struct page *page, void *aux) {
 	size_t page_zero_bytes = PGSIZE - page_read_bytes;
 	
 	/* TODO: 파일에서 세그먼트를 로드합니다. */
-	file_seek (file, offset_of);
+	file_seek (file, offset_of);				//	파일 오프셋을 지정된 위치로 이동
 
-	if (file_read (file, page->frame->kva, page_read_bytes) != (int)page_read_bytes) {
+	if (file_read (file, page->frame->kva, page_read_bytes) != (int)page_read_bytes) {	// spt의 파일 크기와 frame의 파일 크기 체크
 		palloc_free_page (page->frame->kva);
 		
 		return false;
@@ -995,6 +1027,7 @@ static bool lazy_load_segment (struct page *page, void *aux) {
 	/* TODO: 이 함수가 호출될 때 VA 주소에서 첫 번째 페이지 폴트가 발생합니다. */
 	/* TODO: VA는 이 함수를 호출할 때 사용 가능합니다. */
 }
+
 
 /* Loads a segment starting at offset OFS in FILE at address
  * UPAGE.  In total, READ_BYTES + ZERO_BYTES bytes of virtual
@@ -1013,11 +1046,9 @@ static bool lazy_load_segment (struct page *page, void *aux) {
 
 /* 파일의 오프셋 OFS에서 시작하는 세그먼트를 주소 UPAGE에 로드합니다.
  * 총 READ_BYTES + ZERO_BYTES 바이트의 가상 메모리가 초기화됩니다. 다음과 같이 작동합니다:
- *
  * - UPAGE에서 READ_BYTES 바이트는 OFS에서 시작하여 FILE에서 읽어야 합니다.
- *
  * - UPAGE + READ_BYTES에서 ZERO_BYTES 바이트는 제로화되어야 합니다.
- *
+ * 
  * 이 함수에 의해 초기화된 페이지는 WRITABLE이 true인 경우 사용자 프로세스에 의해 쓰기 가능해야 하며,
  * 그렇지 않으면 읽기 전용이어야 합니다.
  *
@@ -1037,8 +1068,8 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 		 * FILE에서 PAGE_READ_BYTES 바이트를 읽고,
 		 * 나머지 PAGE_ZERO_BYTES 바이트는 제로화합니다. */
 
-		size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;
-		size_t page_zero_bytes = PGSIZE - page_read_bytes;
+		size_t page_read_bytes = read_bytes < PGSIZE ? read_bytes : PGSIZE;		// 최대 페이지 사이즈와 비교
+		size_t page_zero_bytes = PGSIZE - page_read_bytes;						// 남은 만큼 0으로 패딩
 
 		/* TODO: Set up aux to pass information to the lazy_load_segment. */
 		/* lazy_load_segment에 정보를 전달하기 위해 aux를 설정합니다. */
@@ -1051,6 +1082,7 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 		
 		spt->file = file;
 		spt->read_bytes = page_read_bytes;
+		spt->zero_bytes = page_zero_bytes;
 		spt->offset = ofs;
 
 		if (!vm_alloc_page_with_initializer (VM_ANON, upage,
@@ -1058,16 +1090,18 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 			return false;
 			
 		/* Advance. */
-		read_bytes -= page_read_bytes;
+		/*  주어진 세그먼트에서 페이지를 읽은 내용을 제로화한 후에 다음 페이지로 넘어가는 과정 */
+		read_bytes -= page_read_bytes;		// 현재 쓴 바이트 수를 뺌
 		zero_bytes -= page_zero_bytes;
-		upage += PGSIZE;
-		ofs += page_read_bytes;
+		upage += PGSIZE;					// 포인터를 다음 시작 주소로 이동
+		ofs += page_read_bytes;				// 현재 페이지에 읽은 바이트 수 만큼 이동
 	}
 
 	return true;
 }
 
 /* Create a PAGE of stack at the USER_STACK. Return true on success. */
+/* 스택을 stack_bottom에 매핑하고 즉시 페이지를 요청합니다. 성공하면 rsp를 적절히 설정합니다. */
 static bool setup_stack (struct intr_frame *if_) {
 	bool success = false;
 	void *stack_bottom = (void *) (((uint8_t *) USER_STACK) - PGSIZE);
@@ -1081,10 +1115,10 @@ static bool setup_stack (struct intr_frame *if_) {
 	 * 페이지를 스택으로 표시해야 합니다. */
 	/* 여기에 코드를 작성하세요 */
 	if (vm_alloc_page (VM_ANON | VM_MARKER_0, stack_bottom, 1)) {
-		success = vm_claim_page (stack_bottom);
+		success = vm_claim_page (stack_bottom);					// 할당된 페이지를 매핑시키고 페이지 테이블에 등록
 
 		if (success) {
-			if_->rsp = USER_STACK;
+			if_->rsp = USER_STACK;								// 현재 스레드의 스택 포인터를 USER_STACK으로 설정
 			thread_current()->stack_bottom = stack_bottom;
 		}
 	}

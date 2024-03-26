@@ -79,6 +79,8 @@ struct desc_ptr gdt_ds = {
 
 /* Sets up a proper GDT.  The bootstrap loader's GDT didn't
    include user-mode selectors or a TSS, but we need both now. */
+/* 올바른 GDT를 설정합니다. 부트스트랩 로더의 GDT에는
+   사용자 모드 셀렉터나 TSS가 포함되어 있지 않았지만, 우리는 지금 둘 다 필요합니다. */
 void
 gdt_init (void) {
 	/* Initialize GDT. */

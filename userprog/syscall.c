@@ -98,7 +98,6 @@ void syscall_handler (struct intr_frame *f UNUSED) {
 	case SYS_OPEN:
 	// printf("====================================\n");
 		f->R.rax = open(f->R.rdi);
-
 		break;
 	case SYS_FILESIZE:
 		f->R.rax = filesize(f->R.rdi);

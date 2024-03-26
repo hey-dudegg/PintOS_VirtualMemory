@@ -77,13 +77,18 @@ filesys_create (const char *name, off_t initial_size) {
  * otherwise.
  * Fails if no file named NAME exists,
  * or if an internal memory allocation fails. */
+
+/* 주어진 이름(NAME)의 파일을 엽니다.
+ * 성공하면 새 파일을 반환하고 그렇지 않으면 널 포인터를 반환합니다.
+ * NAME으로 지정된 파일이 존재하지 않거나,
+ * 내부 메모리 할당(커널의 가상 메모리 공간)에 실패한 경우 실패합니다. */
 struct file *
 filesys_open (const char *name) {
 	struct dir *dir = dir_open_root ();
 	struct inode *inode = NULL;
 	// printf("=============%s===============\n", name);
 	if (dir != NULL)
-		dir_lookup (dir, name, &inode);
+		dir_lookup (dir, name, &inode);			// 디렉토리 검색
 	dir_close (dir);
 	// printf("=============%s===============\n", name);
 	return file_open (inode);
@@ -120,3 +125,4 @@ do_format (void) {
 
 	printf ("done.\n");
 }
+

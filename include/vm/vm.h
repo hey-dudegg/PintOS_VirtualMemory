@@ -18,6 +18,8 @@ enum vm_type {
 
 	/* Auxillary bit flag marker for store information. You can add more
 	 * markers, until the value is fit in the int. */
+	/* 정보를 저장하는 보조 비트 플래그 마커입니다. 더 많은 마커를 추가할 수 있습니다.
+ * 값이 int에 맞을 때까지 추가할 수 있습니다. */
 	VM_MARKER_0 = (1 << 3),
 	VM_MARKER_1 = (1 << 4),
 
@@ -88,8 +90,15 @@ struct page_operations {
 	enum vm_type type;
 };
 
+
+/* 
+시스템은 물리 메모리의 부족한 상황에서 페이지를 스왑 아웃하여 스왑 파일에 저장하고,
+필요할 때 스왑 인하여 다시 물리 메모리로 가져와 사용할 수 있다 */
+
+/* 스왑 인 과정에서는 주어진 페이지가 물리 메모리로 로드되며,
+스왑 파일에서 해당 페이지의 내용을 읽어와 메모리에 채웁니다. */
 #define swap_in(page, v) (page)->operations->swap_in ((page), v)
-#define swap_out(page) (page)->operations->swap_out (page)
+#define swap_out(page) (page)->operations->swap_out (page)				
 #define destroy(page) \
 	if ((page)->operations->destroy) (page)->operations->destroy (page)
 
@@ -156,9 +165,11 @@ void vm_init (void);
 bool vm_try_handle_fault (struct intr_frame *f, void *addr, bool user,
 		bool write, bool not_present);
 
-/* 이 매크로는 vm_alloc_page라는 이름의 매크로를 정의하고 있습니다. 이 매크로는 세 개의 매크로 인자를 받습니다: type, upage, writable.
-그리고 이 매크로는 vm_alloc_page_with_initializer 함수를 호출하는데, 여기서 type, upage, writable은 그대로 전달되고,
-init와 aux는 NULL로 설정됩니다. 즉, vm_alloc_page_with_initializer 함수를 호출할 때 init와 aux 인자는 NULL로 전달됩니다.*/
+/* 이 매크로는 vm_alloc_page라는 이름의 매크로를 정의하고 있습니다.
+이 매크로는 세 개의 매크로 인자를 받습니다: type, upage, writable.
+그리고 이 매크로는 vm_alloc_page_with_initializer 함수를 호출하는데,
+여기서 type, upage, writable은 그대로 전달되고, init와 aux는 NULL로 설정됩니다.
+즉, vm_alloc_page_with_initializer 함수를 호출할 때 init와 aux 인자는 NULL로 전달됩니다.*/
 #define vm_alloc_page(type, upage, writable) \
 	vm_alloc_page_with_initializer ((type), (upage), (writable), NULL, NULL)
 bool vm_alloc_page_with_initializer (enum vm_type type, void *upage,

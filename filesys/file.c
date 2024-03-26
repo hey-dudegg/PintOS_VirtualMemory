@@ -4,9 +4,16 @@
 #include "threads/malloc.h"
 
 /* An open file. */
+/*
+inode는 파일 시스템에서 파일을 나타내는 핵심 데이터 구조입니다.
+각 파일은 고유한 inode를 가지며, 이 inode에는 파일의 메타 데이터(예: 파일 유형, 크기, 소유자 및 권한 등)가 저장됩니다.
+또한 inode에는 파일의 데이터 블록에 대한 포인터가 있어서 파일의 실제 내용을 저장할 수 있습니다.
+파일 시스템은 inode를 사용하여 파일의 위치와 관련된 모든 정보를 추적합니다.
+파일을 열 때 파일 시스템은 해당 파일의 inode를 찾고 해당 inode를 사용하여 파일을 읽거나 쓸 수 있습니다.
+*/
 struct file {
-	struct inode *inode;        /* File's inode. */
-	off_t pos;                  /* Current position. */
+	struct inode *inode;        /* File's inode. 파일의 메타 데이터 */
+	off_t pos;                  /* Current position. 파일 내 현재 위치 */
 	bool deny_write;            /* Has file_deny_write() been called? */
 };
 
@@ -120,6 +127,11 @@ file_write_at (struct file *file, const void *buffer, off_t size,
 
 /* Prevents write operations on FILE's underlying inode
  * until file_allow_write() is called or FILE is closed. */
+/* 
+FILE의 기본 inode에 대한 쓰기 작업을 막습니다. 이 함수가 호출되면 해당 파일에 대한 쓰기 작업이 일시적으로 금지되며,
+이후에 `file_allow_write()` 함수가 호출되거나 파일이 닫힐 때까지 이러한 작업이 계속 유지됩니다.
+이렇게 함으로써, 파일이 읽기 전용으로 설정될 수 있습니다.
+*/
 void
 file_deny_write (struct file *file) {
 	ASSERT (file != NULL);
@@ -150,6 +162,14 @@ file_length (struct file *file) {
 
 /* Sets the current position in FILE to NEW_POS bytes from the
  * start of the file. */
+/* 
+파일에서의 현재 위치를 새로운 위치로 이동시키는 기능을 수행합니다.
+파일에서의 위치는 파일의 시작부터의 오프셋을 기준으로 합니다.
+여기서 FILE은 파일을 나타내는 파일 디스크립터를 가리키며, NEW_POS는 파일 내에서의 새로운 위치를 나타냅니다.
+이 함수를 호출하면 파일의 현재 위치가 NEW_POS로 설정됩니다.
+이 함수를 사용하여 파일 내에서 원하는 위치로 이동하여 데이터를 읽거나 쓸 수 있습니다.
+파일의 위치를 변경함으로써 파일 내 특정 부분에 접근할 수 있습니다.
+*/
 void
 file_seek (struct file *file, off_t new_pos) {
 	ASSERT (file != NULL);

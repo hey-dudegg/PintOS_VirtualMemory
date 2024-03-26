@@ -133,9 +133,12 @@ bss_init (void) {
 	/* The "BSS" is a segment that should be initialized to zeros.
 	   It isn't actually stored on disk or zeroed by the kernel
 	   loader, so we have to zero it ourselves.
-
 	   The start and end of the BSS segment is recorded by the
 	   linker as _start_bss and _end_bss.  See kernel.lds. */
+
+	/* "BSS"는 0으로 초기화되어야 하는 세그먼트입니다.
+	실제로 디스크에 저장되지 않으며 커널 로더에 의해 0으로 설정되지 않기 때문에 직접 0으로 설정해야 합니다.
+	BSS 세그먼트의 시작과 끝은 링커에 의해 _start_bss와 _end_bss로 기록됩니다. kernel.lds를 참조하세요.*/
 	extern char _start_bss, _end_bss;
 	memset (&_start_bss, 0, &_end_bss - &_start_bss);
 }

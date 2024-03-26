@@ -101,6 +101,13 @@ lookup (const struct dir *dir, const char *name,
  * and returns true if one exists, false otherwise.
  * On success, sets *INODE to an inode for the file, otherwise to
  * a null pointer.  The caller must close *INODE. */
+
+/* 이 함수는 주어진 디렉토리에서 특정 이름의 파일을 검색합니다.
+디렉토리는 파일 시스템에서 파일을 저장하는 단위이며, 파일의 이름과 해당 파일의 inode를 매핑하는 역할을 합니다.
+디렉토리에는 여러 파일이 포함될 수 있습니다.
+함수는 주어진 디렉토리(DIR)에서 주어진 이름(NAME)을 가진 파일을 검색합니다. 파일이 발견되면 true를 반환하고,
+INODE 포인터를 사용하여 해당 파일의 inode를 설정합니다. 파일이 발견되지 않으면 false를 반환하고 INODE를 널 포인터로 설정합니다.
+호출자는 이후에 INODE를 사용한 후에는 반드시 INODE를 닫아주어야 합니다. */
 bool
 dir_lookup (const struct dir *dir, const char *name,
 		struct inode **inode) {

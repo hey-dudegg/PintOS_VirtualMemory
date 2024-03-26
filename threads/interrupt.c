@@ -248,12 +248,13 @@ intr_register_ext (uint8_t vec_no, intr_handler_func *handler,
    "Accessing Nonconforming Code Segments" for further
    discussion. */
 
-/* 내부 인터럽트 VEC_NO를 HANDLER로 등록하여, 디버깅을 위해 NAME으로 명명됩니다. 인터럽트 핸들러는 LEVEL로 인터럽트 상태를 갖고 호출됩니다.
-핸들러는 디스크립터 권한 레벨 DPL을 가지며, 이는 프로세서가 DPL 또는 더 낮은 번호의 리너에서 의도적으로 호출될 수 있다는 것을 의미합니다.
+/* 내부 인터럽트 VEC_NO를 HANDLER로 등록하여, 디버깅을 위해 NAME으로 명명됩니다.
+인터럽트 핸들러는 LEVEL로 인터럽트 상태를 갖고 호출됩니다.
+핸들러는 디스크립터 권한 레벨 DPL을 가지며, 이는 프로세서가 DPL 또는 더 낮은 번호의 리너에서
+의도적으로 호출될 수 있다는 것을 의미합니다.
 실제로 DPL==3은 사용자 모드에서 인터럽트를 호출할 수 있게 하고, DPL==0은 그러한 호출을 방지합니다.
 사용자 모드에서 발생하는 결함과 예외는 여전히 DPL==0인 인터럽트를 호출합니다.
 자세한 내용은 [IA32-v3a] 섹션 4.5 "권한 수준" 및 4.8.1.1 "비호환 코드 세그먼트 액세스"를 참조하십시오. */
-
 void
 intr_register_int (uint8_t vec_no, int dpl, enum intr_level level,
 		intr_handler_func *handler, const char *name)
