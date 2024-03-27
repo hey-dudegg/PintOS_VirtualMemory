@@ -251,6 +251,7 @@ run_task (char **argv) {
 		// printf("==================2==================\n");
 		// printf("==================%s==================\n", argv[1]);
 		process_wait (process_create_initd (task));
+		// printf("============================\n");
 	}
 #else
 	run_test (task);

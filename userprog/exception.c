@@ -152,8 +152,7 @@ static void page_fault (struct intr_frame *f) {
 	   accessed to cause the fault.  It may point to code or to
 	   data.  It is not necessarily the address of the instruction
 	   that caused the fault (that's f->rip). */
-	/* 페이지 폴트를 발생시킨 가상 주소를 가져옵니다.
-	   폴트를 발생시킨 가상 주소는 코드나 데이터를 가리킬 수 있습니다.
+	/* 페이지 폴트를 발생시킨 가상 주소를 가져옵니다. 폴트를 발생시킨 가상 주소는 코드나 데이터를 가리킬 수 있습니다.
    이것은 반드시 폴트를 발생시킨 명령어의 주소가 아닐 수 있습니다 (그것은 f->rip에 저장됩니다). */
 	fault_addr = (void *) rcr2();
 

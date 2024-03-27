@@ -35,7 +35,7 @@ struct thread *find_child(tid_t child_tid);
 /* General process initializer for initd and other process. */
 /* process_init 함수는 Pintos의 initd 및 다른 프로세스를 위한 일반적인 프로세스 초기화를 수행합니다.
 현재 스레드의 포인터를 가져와서 현재 프로세스의 초기화 작업을 수행합니다.  */
-static void process_init (void) {
+static void  process_init (void) {
 	struct thread *current = thread_current ();
 }
 
@@ -58,6 +58,7 @@ tid_t process_create_initd (const char *file_name) {
 	fn_copy = palloc_get_page (0);
 	if (fn_copy == NULL)
 		return TID_ERROR;
+
 	strlcpy (fn_copy, file_name, PGSIZE);
 	char *token, *save_ptr;
 	token = strtok_r(file_name," ",&save_ptr);
@@ -67,6 +68,7 @@ tid_t process_create_initd (const char *file_name) {
 	// printf("==================%d==================\n", tid);
 	if (tid == TID_ERROR)
 		palloc_free_page (fn_copy);
+	
 	return tid;
 }
 
@@ -82,6 +84,7 @@ static void initd (void *f_name) {
 	if (process_exec (f_name) < 0){
 		PANIC("Fail to launch initd\n");
 	}
+	
 	NOT_REACHED ();
 }
 
@@ -367,6 +370,7 @@ process_wait (tid_t child_tid UNUSED) {
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
 	struct thread *t = find_child(child_tid);
+	// printf("============================\n");
 	if (t == NULL){
 		return -1;
 	}
@@ -457,6 +461,20 @@ process_activate (struct thread *next) {
 	/* Set thread's kernel stack for use in processing interrupts. */
 	tss_update (next);
 }
+
+/*
+1. 페이지 테이블 활성화
+next 스레드의 페이지 테이블을 활성화합니다.
+이는 해당 스레드의 주소 공간에 접근할 수 있도록 하는 것으로,
+현재 실행 중인 스레드가 사용한 페이지 테이블을 해제하고 next 스레드의 페이지 테이블을 활성화합니다.
+
+2. 인터럽트 처리를 위한 스레드의 커널 스택 설정
+인터럽트 발생 시 스레드가 사용할 커널 스택을 설정합니다.
+인터럽트 처리 중에는 커널 스택이 필요하므로, 각 스레드가 자신만의 커널 스택을 가지고 있어야 합니다.
+tss_update(next) 함수를 호출하여 TSS(태스크 세그먼트 디스크립터)의 스택 포인터를 업데이트합니다.
+이는 다음 스레드로의 스위칭 시 인터럽트 처리를 위한 올바른 커널 스택을 사용할 수 있도록 하는 것입니다.
+*/
+
 
 /* We load ELF binaries.  The following definitions are taken
  * from the ELF specification, [ELF1], more-or-less verbatim.  */
@@ -553,7 +571,7 @@ static bool load (const char *file_name, struct intr_frame *if_) {
 	if (t->pml4 == NULL)
 		goto done;
 
-	process_activate (thread_current ());
+	process_activate (thread_current ());	// 다음 스레드를 활성화하는 데 필요한 일련의 작업을 수행하여 스레드의 실행이 가능한 상태로 만듦
 
 	/* Open executable file. */
 	
@@ -664,6 +682,7 @@ static bool load (const char *file_name, struct intr_frame *if_) {
 	if (!setup_stack (if_))				// 피지컬 메모리에 페이지로 할당.
 	// printf("=====================\n");
 		goto done;
+		// printf("============================\n");
 	
 	/* Start address. */
 	if_->rip = ehdr.e_entry;
@@ -1116,7 +1135,7 @@ static bool setup_stack (struct intr_frame *if_) {
 	/* 여기에 코드를 작성하세요 */
 	if (vm_alloc_page (VM_ANON | VM_MARKER_0, stack_bottom, 1)) {
 		success = vm_claim_page (stack_bottom);					// 할당된 페이지를 매핑시키고 페이지 테이블에 등록
-
+		// printf("============================\n");
 		if (success) {
 			if_->rsp = USER_STACK;								// 현재 스레드의 스택 포인터를 USER_STACK으로 설정
 			thread_current()->stack_bottom = stack_bottom;
