@@ -23,7 +23,7 @@
 
 #ifdef VM
 #include "vm/vm.h"
-#include "include/threads/thread.h"
+
 #endif
 
 static void process_cleanup (void);

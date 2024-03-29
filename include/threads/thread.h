@@ -1,5 +1,6 @@
 #ifndef THREADS_THREAD_H
 #define THREADS_THREAD_H
+#pragma once
 
 #include <debug.h>
 #include <list.h>
@@ -9,6 +10,7 @@
 
 #ifdef VM
 #include "vm/vm.h"
+// #include "include/vm/vm.h"
 
 #endif
 
@@ -88,6 +90,9 @@ typedef int tid_t;
  * only because they are mutually exclusive: only a thread in the
  * ready state is on the run queue, whereas only a thread in the
  * blocked state is on a semaphore wait list. */
+
+struct supplemental_page_table;
+
 struct thread {
 	/* Owned by thread.c. */
 	tid_t tid;                          /* Thread identifier. */
