@@ -32,7 +32,7 @@ enum vm_type {
 #include "vm/file.h"
 #include "include/lib/kernel/hash.h"
 #include "list.h"
-
+#include "include/threads/vaddr.h"
 
 #ifdef EFILESYS
 #include "filesys/page_cache.h"

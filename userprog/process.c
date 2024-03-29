@@ -266,19 +266,20 @@ int process_exec (void *f_name) {
 	palloc_free_page(fn_copy);
 	
 	lock_release(&filesys_lock);
-
+// printf("=============%s===============\n", file_name);
 	/* If load failed, quit. */
 	if (!success)
 	{
+		// printf("=============%s===============\n", file_name);
 		palloc_free_page(file_name);
 		return -1;
 	}
-	
+	// printf("=============%s===============\n", file_name);
 	//argument_passing(f_name);
 	int arg_cnt=1;
 	char *save_ptr;
 
-	for(int i=0;i<strlen(file_name);i++)
+	for(int i = 0; i < strlen(file_name); i++)
 	{
 		if(file_name[i] == ' ')
 			arg_cnt++;
@@ -286,8 +287,7 @@ int process_exec (void *f_name) {
 	char *arg_list[arg_cnt];
 	int64_t arg_addr_list[arg_cnt];
 
-	int total_cnt=0;
-
+	int total_cnt = 0;
 
 	for(int i=0;i<arg_cnt;i++)
 	{
@@ -296,12 +296,12 @@ int process_exec (void *f_name) {
 			arg_cnt--;
 		}
 	}
-
+// printf("=============%s===============\n", file_name);
 	for(int i=arg_cnt-1;i>=0;i--)
 	{
-		_if.rsp -= strlen(arg_list[i])+1;
-		total_cnt+=strlen(arg_list[i])+1;
-		strlcpy(_if.rsp,arg_list[i],strlen(arg_list[i])+1);
+		_if.rsp -= strlen(arg_list[i]) + 1;
+		total_cnt += strlen(arg_list[i]) + 1;
+		strlcpy(_if.rsp, arg_list[i], strlen(arg_list[i])+1);
 		arg_addr_list[i] = _if.rsp;
 	
 	}
@@ -1025,24 +1025,21 @@ static bool lazy_load_segment (struct page *page, void *aux) {
 	/* TODO: Load the segment from the file */
 	/* TODO: This called when the first page fault occurs on address VA. */
 	/* TODO: VA is available when calling this function. */
-
+	// printf("==============================\n");
 	struct file *file = ((struct supplemental_page_table *)aux)->file;
 	off_t offset_of = ((struct supplemental_page_table *)aux)->offset;
 	size_t page_read_bytes = ((struct supplemental_page_table *)aux)->read_bytes;
-	size_t page_zero_bytes = PGSIZE - page_read_bytes;
-	
-	/* TODO: 파일에서 세그먼트를 로드합니다. */
-	file_seek (file, offset_of);				//	파일 오프셋을 지정된 위치로 이동
+    size_t page_zero_bytes = PGSIZE - page_read_bytes;
 
-	if (file_read (file, page->frame->kva, page_read_bytes) != (int)page_read_bytes) {	// spt의 파일 크기와 frame의 파일 크기 체크
-		palloc_free_page (page->frame->kva);
-		
-		return false;
-	}
-	
-	memset ((page->frame->kva + page_read_bytes), 0, page_zero_bytes);
+	file_seek(file, offset_of);
 
-	return true;
+    if (file_read(file, page->frame->kva, page_read_bytes) != (int)page_read_bytes) {
+		palloc_free_page(page->frame->kva);
+        return false;
+    }
+    memset(page->frame->kva + page_read_bytes, 0, page_zero_bytes);
+	// printf("==============================\n");
+    return true;
 	/* TODO: 이 함수가 호출될 때 VA 주소에서 첫 번째 페이지 폴트가 발생합니다. */
 	/* TODO: VA는 이 함수를 호출할 때 사용 가능합니다. */
 }
@@ -1101,9 +1098,9 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
 		
 		spt->file = file;
 		spt->read_bytes = page_read_bytes;
-		spt->zero_bytes = page_zero_bytes;
+		// spt->zero_bytes = page_zero_bytes;
 		spt->offset = ofs;
-
+		// printf("==========================\n");
 		if (!vm_alloc_page_with_initializer (VM_ANON, upage,
 					writable, lazy_load_segment, spt)) 
 			return false;

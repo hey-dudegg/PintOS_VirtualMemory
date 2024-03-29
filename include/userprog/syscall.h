@@ -5,7 +5,7 @@
 #include <debug.h>
 #include <stddef.h>
 #include "threads/interrupt.h"
-
+void check_valid_buffer (void *buffer, unsigned size, void* rsp, bool to_write) ;
 struct lock filesys_lock;
 bool check_addr(char *addr);
 //int create_fd(struct file *f);

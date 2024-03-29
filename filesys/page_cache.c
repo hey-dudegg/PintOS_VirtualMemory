@@ -25,7 +25,7 @@ pagecache_init (void) {
 bool
 page_cache_initializer (struct page *page, enum vm_type type, void *kva) {
 	/* Set up the handler */
-	page->operations = &page_cache_op;
+	// page->operations = &page_cache_op;
 
 }
 
