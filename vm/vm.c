@@ -1,8 +1,16 @@
 /* vm.c: Generic interface for virtual memory objects. */
 
 #include "threads/malloc.h"
-#include "vm/vm.h"
+// #include "vm/vm.h"
 #include "vm/inspect.h"
+#include "threads/thread.h"
+
+#ifdef VM
+#include "vm/vm.h"
+#include <hash.h>
+#include <list.h>
+#include "filesys/file.c"
+#endif
 
 /* Initializes the virtual memory subsystem by invoking each subsystem's
  * intialize codes. */

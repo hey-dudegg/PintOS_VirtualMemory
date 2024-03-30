@@ -1,3 +1,6 @@
+#ifndef FILESYS_FILE_H
+#define FILESYS_FILE_H
+
 #include "filesys/file.h"
 #include <debug.h>
 #include "filesys/inode.h"
@@ -184,3 +187,5 @@ file_tell (struct file *file) {
 	ASSERT (file != NULL);
 	return file->pos;
 }
+
+#endif

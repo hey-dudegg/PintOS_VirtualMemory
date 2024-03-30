@@ -1,5 +1,5 @@
 /* page_cache.c: Implementation of Page Cache (Buffer Cache). */
-
+#ifdef EFILESYS
 #include "vm/vm.h"
 static bool page_cache_readahead (struct page *page, void *kva);
 static bool page_cache_writeback (struct page *page);
@@ -48,3 +48,4 @@ page_cache_destroy (struct page *page) {
 static void
 page_cache_kworkerd (void *aux) {
 }
+#endif

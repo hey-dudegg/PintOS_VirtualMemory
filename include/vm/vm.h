@@ -1,5 +1,6 @@
 #ifndef VM_VM_H
 #define VM_VM_H
+
 #include <stdbool.h>
 #include "threads/palloc.h"
 
@@ -30,9 +31,11 @@ enum vm_type {
 #include "vm/uninit.h"
 #include "vm/anon.h"
 #include "vm/file.h"
-#include "include/lib/kernel/hash.h"
-#include "list.h"
+#include <hash.h>
+#include <list.h>
+#include "filesys/file.c"
 #include "include/threads/vaddr.h"
+
 
 #ifdef EFILESYS
 #include "filesys/page_cache.h"
@@ -92,8 +95,7 @@ struct page_operations {
 };
 
 
-/* 
-시스템은 물리 메모리의 부족한 상황에서 페이지를 스왑 아웃하여 스왑 파일에 저장하고,
+/* 시스템은 물리 메모리의 부족한 상황에서 페이지를 스왑 아웃하여 스왑 파일에 저장하고,
 필요할 때 스왑 인하여 다시 물리 메모리로 가져와 사용할 수 있다 */
 
 /* 스왑 인 과정에서는 주어진 페이지가 물리 메모리로 로드되며,
@@ -106,7 +108,6 @@ struct page_operations {
 /* Representation of current process's memory space.
  * We don't want to force you to obey any specific design for this struct.
  * All designs up to you for this. */
-/* 
 /* 현재 프로세스의 메모리 공간을 나타내는 구조체입니다.
 이 구조체에 대해 특정한 디자인을 강요하고 싶지 않습니다.
 이에 대한 모든 디자인은 여러분에게 달려 있습니다. */

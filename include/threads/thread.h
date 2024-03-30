@@ -9,9 +9,8 @@
 
 #ifdef VM
 #include "vm/vm.h"
-
+struct supplemental_page_table;
 #endif
-
 
 /* States in a thread's life cycle. */
 enum thread_status {
@@ -143,7 +142,7 @@ pml4는 현재 스레드가 사용하는 페이지 디렉토리를 가리키므�
 
 #ifdef VM
 	/* Table for whole virtual memory owned by thread. */
-	struct supplemental_page_table spt;
+	struct supplemental_page_table *spt;
 	void *stack_bottom;
 	void *rsp_stack;
 
@@ -209,5 +208,3 @@ void recalculate_recent_cpu(void);
 #define FDT_COUNT_LIMIT FDT_PAGES *(1 << 9)
 
 #endif /* threads/thread.h */
-
-

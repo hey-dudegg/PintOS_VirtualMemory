@@ -13,8 +13,13 @@
 #include "threads/fixed-point.h"
 #include "devices/timer.h"
 #include "intrinsic.h"
+
 #ifdef USERPROG
 #include "userprog/process.h"
+#endif
+
+#ifdef VM
+#include "vm/vm.h"
 #endif
 
 /* Random value for struct thread's `magic' member.

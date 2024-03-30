@@ -49,9 +49,9 @@ static void  process_init (void) {
 새로운 스레드는 process_create_initd()가 반환되기 전에 스케줄될 수 있으며 (심지어 종료될 수도 있음),
 initd의 스레드 ID를 반환하거나 스레드가 생성되지 않은 경우 TID_ERROR를 반환합니다.
 이 함수는 한 번만 호출되어야 합니다. */
-tid_t process_create_initd (const char *file_name) {
+int process_create_initd (const char *file_name) {
 	char *fn_copy;
-	tid_t tid;
+	int tid;
 
 	/* Make a copy of FILE_NAME. Otherwise there's a race between the caller and load(). */
 	/* FILE_NAME의 사본을 만듭니다. 그렇지 않으면 호출자와 load() 사이에 경합이 발생합니다. */
@@ -101,11 +101,11 @@ static void initd (void *f_name) {
 // 	return thread_create (name,
 // 			PRI_DEFAULT, __do_fork, thread_current ());
 // }
-tid_t process_fork (const char *name, struct intr_frame *if_ UNUSED) {
+int process_fork (const char *name, struct intr_frame *if_ UNUSED) {
 	/* Clone current thread to new thread.*/
 	struct thread *curr = thread_current();
 	memcpy(&curr->parent_if, if_, sizeof (struct intr_frame)); // &curr->tf를 parent_if에 copy
-	tid_t tid = thread_create (name, PRI_DEFAULT, __do_fork, thread_current ());
+	int tid = thread_create (name, PRI_DEFAULT, __do_fork, thread_current ());
 	if (tid == TID_ERROR){
 		return TID_ERROR;
 	}
@@ -453,8 +453,7 @@ process_cleanup (void) {
 /* Sets up the CPU for running user code in the nest thread.
  * This function is called on every context switch. */
 /* 이 함수는 매번 context switch될 때마다 CPU를 사용자 코드 실행을 위해 설정합니다. */
-void
-process_activate (struct thread *next) {
+void process_activate (struct thread *next) {
 	/* Activate thread's page tables. */
 	pml4_activate (next->pml4);
 
@@ -1021,7 +1020,7 @@ frame과 연결하고 userprogram으로 제어권을 넘긴다.
 세그먼트의 나머지 부분을 0으로 초기화합니다(필요한 경우).
 함수가 호출될 때 제공된 가상 주소(VA)가 첫 번째 페이지 폴트가 발생한 위치입니다.
 이 위치의 페이지를 로드하고 해당 페이지가 가리키는 프레임에 데이터를 씁니다. */
-static bool lazy_load_segment (struct page *page, void *aux) {
+bool lazy_load_segment (struct page *page, void *aux) {
 	/* TODO: Load the segment from the file */
 	/* TODO: This called when the first page fault occurs on address VA. */
 	/* TODO: VA is available when calling this function. */
@@ -1037,6 +1036,7 @@ static bool lazy_load_segment (struct page *page, void *aux) {
 		palloc_free_page(page->frame->kva);
         return false;
     }
+
     memset(page->frame->kva + page_read_bytes, 0, page_zero_bytes);
 	// printf("==============================\n");
     return true;
