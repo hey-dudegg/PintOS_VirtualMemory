@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include "threads/palloc.h"
+#include "userprog/process.h"
 
 enum vm_type {
 	/* page not initialized */
@@ -196,3 +197,12 @@ bool delete_page (struct hash *hash, struct page *page);
 unsigned page_hash (const struct hash_elem *p_, void *aux UNUSED);
 
 #endif  /* VM_VM_H */
+
+
+/* Representation of current process's memory space.
+ * We don't want to force you to obey any specific design for this struct.
+ * All designs up to you for this. */
+/* 
+/* 현재 프로세스의 메모리 공간을 나타내는 구조체입니다.
+이 구조체에 대해 특정한 디자인을 강요하고 싶지 않습니다.
+이에 대한 모든 디자인은 여러분에게 달려 있습니다. */
