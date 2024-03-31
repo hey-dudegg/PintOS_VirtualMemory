@@ -460,7 +460,7 @@ void *mmap (void *addr, size_t length, int writable, int fd, off_t offset) {
     if (target == NULL)
         return NULL;
 
-    void * ret = do_mmap(addr, length, writable, target, offset);
+    void *ret = do_mmap(addr, length, writable, target, offset);
 
     return ret;
 }

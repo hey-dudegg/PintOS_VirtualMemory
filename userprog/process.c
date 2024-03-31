@@ -49,9 +49,9 @@ static void  process_init (void) {
 새로운 스레드는 process_create_initd()가 반환되기 전에 스케줄될 수 있으며 (심지어 종료될 수도 있음),
 initd의 스레드 ID를 반환하거나 스레드가 생성되지 않은 경우 TID_ERROR를 반환합니다.
 이 함수는 한 번만 호출되어야 합니다. */
-int process_create_initd (const char *file_name) {
+tid_t process_create_initd (const char *file_name) {
 	char *fn_copy;
-	int tid;
+	tid_t tid;
 
 	/* Make a copy of FILE_NAME. Otherwise there's a race between the caller and load(). */
 	/* FILE_NAME의 사본을 만듭니다. 그렇지 않으면 호출자와 load() 사이에 경합이 발생합니다. */
@@ -101,11 +101,11 @@ static void initd (void *f_name) {
 // 	return thread_create (name,
 // 			PRI_DEFAULT, __do_fork, thread_current ());
 // }
-int process_fork (const char *name, struct intr_frame *if_ UNUSED) {
+tid_t process_fork (const char *name, struct intr_frame *if_ UNUSED) {
 	/* Clone current thread to new thread.*/
 	struct thread *curr = thread_current();
 	memcpy(&curr->parent_if, if_, sizeof (struct intr_frame)); // &curr->tf를 parent_if에 copy
-	int tid = thread_create (name, PRI_DEFAULT, __do_fork, thread_current ());
+	tid_t tid = thread_create (name, PRI_DEFAULT, __do_fork, thread_current ());
 	if (tid == TID_ERROR){
 		return TID_ERROR;
 	}

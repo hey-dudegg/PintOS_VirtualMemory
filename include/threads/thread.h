@@ -1,16 +1,16 @@
 #ifndef THREADS_THREAD_H
 #define THREADS_THREAD_H
-#pragma once
 
 #include <debug.h>
 #include <list.h>
 #include <stdint.h>
 #include "threads/interrupt.h"
 #include "threads/synch.h"
+// #include "userprog/process.h"
 
 #ifdef VM
 #include "vm/vm.h"
-struct supplemental_page_table;
+
 #endif
 
 /* States in a thread's life cycle. */
@@ -89,7 +89,7 @@ typedef int tid_t;
  * ready state is on the run queue, whereas only a thread in the
  * blocked state is on a semaphore wait list. */
 
-struct supplemental_page_table;
+// struct supplemental_page_table;
 
 struct thread {
 	/* Owned by thread.c. */

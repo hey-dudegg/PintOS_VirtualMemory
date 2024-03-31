@@ -1,5 +1,3 @@
-/* */
-
 #include <string.h>
 #include <syscall.h>
 #include <stdio.h>
