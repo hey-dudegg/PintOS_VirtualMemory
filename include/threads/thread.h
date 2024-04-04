@@ -6,6 +6,7 @@
 #include <stdint.h>
 #include "threads/interrupt.h"
 #include "threads/synch.h"
+#include "lib/kernel/hash.h"
 #ifdef VM
 #include "vm/vm.h"
 #endif
@@ -99,46 +100,56 @@ struct thread {
 	/*time to wake up*/
 	int64_t wakeup_ticks; 
 
+	int original_priority;
+
 	struct lock *wait_on_lock;
 
 	struct list donations;
+
 	struct list_elem d_elem;
+
 	struct list_elem all_elem;
 
 	int recent_cpu;
-	int original_priority;
+
 	int nice;
+
 	int exit_status;
 
 	//struct file *fdt[64];
-	int fd_idx;
-
-	struct file* exec_file;
+	
 	struct file **fdt;
 	
+	int fd_idx;
+	
+	struct file* exec_file;
+
 	struct list child_list;
+
 	struct list_elem child_elem;
 
 	struct semaphore wait_sema;
+
 	struct semaphore exit_sema;
+
 	struct semaphore child_load_sema;
 
 	struct intr_frame parent_if;
-
-
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
 #endif
-// #ifdef VM
+#ifdef VM
 	/* Table for whole virtual memory owned by thread. */
-	uint64_t *pml4;						// pagedir(pml4)
 	struct supplemental_page_table spt;
+	void *rsp;
 #endif
 
 	/* Owned by thread.c. */
 	struct intr_frame tf;               /* Information for switching */
 	unsigned magic;                     /* Detects stack overflow. */
+
+	// struct hash vm; /*Hash table to manage virtual address space of thread*/
 };
 
 /* If false (default), use round-robin scheduler.

@@ -23,6 +23,19 @@
         "process.h": "c",
         "vaddr.h": "c",
         "palloc.h": "c",
-        "mmu.h": "c"
+        "mmu.h": "c",
+        "uninit.h": "c",
+        "anon.h": "c",
+        "hash.h": "c",
+        "inspect.h": "c",
+        "lib.h": "c",
+        "debug.h": "c",
+        "disk.h": "c",
+        "stddef.h": "c",
+        "stdbool.h": "c",
+        "off_t.h": "c",
+        "ctype.h": "c",
+        "timer.h": "c",
+        "io.h": "c"
     }
 }

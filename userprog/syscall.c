@@ -54,18 +54,20 @@ syscall_init (void) {
 // 		exit(-1);
 // 	}
 // }
+
+
 bool check_addr(char* addr){
-	if(!addr || !is_user_vaddr(addr)|| !pml4_get_page(thread_current()->pml4,addr))
+	if(!addr || !is_user_vaddr(addr))
 		return false;
 	return true;
-
-	/* addr이 vm_entry에 존재하면 vm_entry를 반환하도록 코드 작성 */
-	/* find_vme () 사용 */
 }
 
 /* The main system call interface */
 void
 syscall_handler (struct intr_frame *f UNUSED) {
+	#ifdef VM
+    thread_current()->rsp = f->rsp; // 추가
+	#endif
 	// TODO: Your implementation goes here.
 	switch(f->R.rax){
 		case SYS_HALT:
@@ -91,14 +93,11 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		break;
 	case SYS_OPEN:
 		f->R.rax = open(f->R.rdi);
-
 		break;
 	case SYS_FILESIZE:
 		f->R.rax = filesize(f->R.rdi);
 		break;
 	case SYS_READ:
-		// if(!check_addr(f->R.rsi))
-		// 	exit(-1);
 		f->R.rax = read(f->R.rdi,f->R.rsi,f->R.rdx);
 		break;
 	case SYS_WRITE:
@@ -113,7 +112,86 @@ syscall_handler (struct intr_frame *f UNUSED) {
 	case SYS_CLOSE:
 		close(f->R.rdi);
 		break;
+	/* Map a file into memory. */
+	case SYS_MMAP:
+		f->R.rax = mmap(f->R.rdi, f->R.rsi, f->R.rdx, f->R.r10, f->R.r8);
+		break;
+	/* Remove a memory mapping. */
+	case SYS_MUNMAP:
+		munmap(f->R.rdi);
+		break;
+	    
 	}
+}
+
+/* fd로 열린 파일의 오프셋(offset) 바이트부터 length 바이트 만큼을 프로세스의 가상주소공간의 주소 addr 에 매핑 합니다. */
+void *mmap (void *addr, size_t length, int writable, int fd, off_t offset){
+	
+	// if (addr == NULL | addr != pg_round_down(addr) | offset != pg_round_down(addr))
+	// 	return NULL;
+	
+	// struct file *file = find_file_by_fd(fd);
+	// if (file == NULL | file_length(file) == NULL | (int)length == NULL)
+
+	// if(is_kernel_vaddr(addr) || addr == KERN_BASE - PGSIZE){
+	// 	return NULL;
+	// }
+
+	if (spt_find_page(&thread_current()->spt, addr))
+		return NULL;
+	if (!addr || addr != pg_round_down(addr) || pg_ofs(addr) != 0)
+		return NULL;
+
+	if(fd == 0 || fd == 1)
+        exit(-1);
+
+	if (offset != pg_round_down(offset))
+		return NULL;
+
+	if (!is_user_vaddr(addr) || !is_user_vaddr(addr +length))
+		return NULL;
+
+	if (spt_find_page(&thread_current()->spt, addr))
+		return NULL;
+
+	struct file *f = find_file_by_fd(fd);
+	if (f == NULL)
+		return NULL;
+
+	if(file_length(f)== 0){
+		exit(-1);
+	}
+
+	if ((int)length <= 0)
+		return NULL;
+	
+	
+	return do_mmap(addr, length, writable, f, offset);
+}
+
+
+
+
+// if (!addr || addr != pg_round_down(addr))
+// 		return NULL;
+
+// 	if (offset != pg_round_down(offset))
+// 		return NULL;
+
+// 	if (!is_user_vaddr(addr) || !is_user_vaddr(addr + length))
+// 		return NULL;
+
+// 	if (spt_find_page(&thread_current()->spt, addr))
+// 		return NULL;
+
+// 	struct file *f = process_get_file(fd);
+// 	if (f == NULL)
+// 		return NULL;
+
+// 	if (file_length(f) == 0 || (int)length <= 0)
+// 		return NULL;
+void munmap (void *addr){
+	do_munmap(addr);
 }
 
 void halt (void)
@@ -134,15 +212,16 @@ void exit (int status)
 pid_t fork (const char *thread_name, const struct intr_frame *f){
 	struct thread *curr = thread_current ();
 	// printf("[DBG] fork() {%s} try to fork {%s}\n", curr->name, thread_name); //
-	return process_fork(thread_name, f);
+	// lock_acquire(&filesys_lock);
+	// return process_fork(thread_name, f);
+	pid_t fork_result = process_fork(thread_name, f);
+	// lock_release(&filesys_lock);
+
+	return fork_result;
 }
 
 /* process_create_initd 과 유사, thread_create은 fork에서 */
 int exec (const char *cmd_line){
-	// struct file *open_file = filesys_open(cmd_line);
-	// if(open_file == NULL){
-	// 	return -1;
-	// }
 	if(!check_addr(cmd_line))
 		exit(-1);
 	// int size = strlen(cmd_line) + 1;
@@ -159,39 +238,8 @@ int wait (pid_t child_tid){
 	return process_wait(child_tid);
 }
 
-// int create_fd(struct file *file){
-// 	struct thread *curr = thread_current();
-// 	if(curr->fd_idx <128){
-// 		int idx = curr->fd_idx;
-// 		curr->fdt[idx] = file;
-// 		curr->fd_idx ++;
-// 		return idx;
-// 	}
-// 	return -1;
-// }
 
-int create_fd(struct file *file){
-	// struct thread *curr = thread_current();
-	// struct file **fdt = curr->fdt;
-	// if(curr->fd_idx <128){
-	// 	int idx = curr->fd_idx;
-	// 	curr->fdt[idx] = file;
-	// 	curr->fd_idx ++;
-	// 	return idx;
-	// }
-	// return -1;
-	struct thread*curr = thread_current();
-	struct file**fdt = curr->fdt;
-
-	while(curr->fd_idx<FDT_COUNT_LIMIT&&fdt[curr->fd_idx])
-		curr->fd_idx++;
-		if(curr->fd_idx >= FDT_COUNT_LIMIT)
-			return -1;
-		fdt[curr->fd_idx] =file;
-
-		return curr->fd_idx;
-	
-	// for (int idx = curr->fd_idx; idx< FDT_COUNT_LIMIT; idx++){
+// for (int idx = curr->fd_idx; idx< FDT_COUNT_LIMIT; idx++){
 	// 	if (fdt[idx] == NULL){
 	// 		fdt[idx] = file;
 	// 		curr->fd_idx = idx;
@@ -199,16 +247,26 @@ int create_fd(struct file *file){
 	// 	}
 	// }
 	// return -1;
+
+	
+int create_fd(struct file *file){
+	struct thread*curr = thread_current();
+	struct file**fdt = curr->fdt;
+
+	while(curr->fd_idx < FDT_COUNT_LIMIT && fdt[curr->fd_idx])
+		curr->fd_idx++;
+		if(curr->fd_idx >= FDT_COUNT_LIMIT)
+			return -1;
+		fdt[curr->fd_idx] = file;
+
+		return curr->fd_idx;
+	
 }
 
 struct file* find_file_by_fd(int fd){
-	// struct thread *curr = thread_current();
-	// struct file **fdt = curr->fdt;
-	// if(fd >128 || fd <3)
-	// 	exit(-1);
-	// return curr->fdt[fd];
 	struct thread*curr = thread_current();
 	struct file**fdt = curr->fdt;
+
 	if(fd < 2 || fd >= FDT_COUNT_LIMIT)
 		return NULL;
 	
@@ -216,9 +274,15 @@ struct file* find_file_by_fd(int fd){
 }
 
 void del_fd(int fd){
-	// struct thread *curr = thread_current();
-	// struct file **fdt = curr->fdt;
-
+	
+	struct thread*curr = thread_current();
+	struct file**fdt = curr->fdt;
+	if(fd < 2 || fd >= FDT_COUNT_LIMIT)
+	{
+		return NULL;
+	}
+	fdt[fd] = NULL;	 
+}
 	// if(fd == curr->fd_idx-1)
 	// {
 	// 	curr->fdt[fd] = NULL;
@@ -229,26 +293,7 @@ void del_fd(int fd){
 	// 	}
 	// 	curr->fd_idx --;
 	// }
-	struct thread*curr = thread_current();
-	struct file**fdt = curr->fdt;
-	if(fd < 2 || fd >= FDT_COUNT_LIMIT)
-	{
-		return NULL;
-	}
-	fdt[fd] = NULL;	 
-}
-bool create (const char *file, unsigned initial_size){
-	if(!check_addr(file)){
-			exit(-1);
-		}
-	lock_acquire(&filesys_lock);
-	// if(strlen(file) >= 511)
-	// 	return 0;
-	bool success = filesys_create(file,initial_size);
-	lock_release(&filesys_lock);
-	return success;
-	
-}
+
 // bool create (const char *file, unsigned initial_size){
 // 	// check_addr(file);
 // 	// printf("%d\n",strlen(file));
@@ -263,60 +308,46 @@ bool create (const char *file, unsigned initial_size){
 // 	// lock_release(&filesys_lock);
 // 	return success;
 // 	}
-bool remove (const char *file){
+
+bool create (const char *file, unsigned initial_size){
 	if(!check_addr(file))
-			exit(-1);
-	//lock_acquire(&filesys_lock);
-	bool success = filesys_remove(file);
-	//lock_release(&filesys_lock);
+		exit(-1);
+	lock_acquire(&filesys_lock);
+	// if(strlen(file) >= 511)
+	// 	return 0;
+	bool success = filesys_create(file,initial_size);
+	lock_release(&filesys_lock);
 	return success;
 }
 
+bool remove (const char *file){
+	if(!check_addr(file))
+		exit(-1);
+	lock_acquire(&filesys_lock);
+	bool success = filesys_remove(file);
+	lock_release(&filesys_lock);
+	return success;
+}
+
+/* returns fd*/
 int open (const char *file){
 	if(!check_addr(file))
-			exit(-1);
-	// // if(file == NULL){
-	// // 	exit(-1);
-	// // }
-	// lock_acquire(&filesys_lock);
-	// if(strcmp(file,"")== 0){
-	// 	return -1;
-	// }
-	// struct file *open_file = filesys_open(file);
-	// lock_release(&filesys_lock);
-	// if(open_file == NULL){
-	// 	return -1;
-	// }else {
-	// 	int fd = create_fd(open_file);
-	// 	return fd;
-	// }
+		exit(-1);
+
+	lock_acquire(&filesys_lock);
 	struct file *f = filesys_open(file);
 
-	if (f == NULL)
-		return -1;
+	if (f == NULL){
+	lock_release(&filesys_lock);
+		return -1;}
 
 	int fd = create_fd(f);
 	if (fd == -1)
 		file_close(f);
-
+	lock_release(&filesys_lock);
 	return fd;
 }
-// /* returns fd*/
-// int open (const char *file){
-// 	check_addr(file);
-// 	//lock_acquire(&filesys_lock);
-// 	struct file *f= filesys_open(file);
-	
-// 	if (f == NULL){
-// 	   	return -1;
-// 	}
-	
-// 	int fd = create_fd(file);
-// 	if (fd == -1)
-// 		file_close(f);
-// 	//lock_release(&filesys_lock);
-// 	return fd;
-// }
+
 int filesize (int fd){
 	struct file *file = find_file_by_fd(fd);
 	if(file == NULL)
@@ -327,6 +358,18 @@ int filesize (int fd){
 int read (int fd, void *buffer, unsigned length){
 	if(!check_addr(buffer))
 			exit(-1);
+	// printf("syscall_read fd: %d, buffer: %p, length: %d\n", fd, buffer, length);
+	struct page *page = spt_find_page(&thread_current()->spt, buffer);
+	// printf("[syscall_read] page 1: %p\n", page);
+	// printf("[syscall_read] page type: %d\n", page->operations->type);
+	// if (page == NULL){
+	// 	exit(-1);
+	// }
+
+	if (page && !page->writable){
+			exit(-1);
+		}
+	// printf("[syscall_read] page 2: %p\n", page);
 	char *ptr = (char *)buffer;
 	int bytes_read = 0;
 
@@ -335,12 +378,13 @@ int read (int fd, void *buffer, unsigned length){
 			char ch = input_getc();
 			if (ch == '\n'){
 				break;
+			}
 			*ptr = ch;
             ptr++;
 			bytes_read++;
 			}
 		}
-	}
+	// }
 	else{
 		if (fd < 2)
 				return -1;
@@ -348,17 +392,26 @@ int read (int fd, void *buffer, unsigned length){
 		if (file == NULL){
 			return -1;
 		}
+		// printf("[syscall_read] file_read start\n");
 		lock_acquire(&filesys_lock);
 		bytes_read = file_read(file,buffer,length);
 		lock_release(&filesys_lock);
+		// printf("[syscall_read] file_read end - bytes_read : %d\n",bytes_read);
 }
 	return bytes_read;
 }
 
-// /* STDIN:0 STDOUT:1*/
+ /* STDIN:0 STDOUT:1*/
 int write (int fd, const void *buffer, unsigned length){
 	if(check_addr(buffer) == 0)
 		exit(-1);
+	// 	struct page *page = spt_find_page(&thread_current()->spt, buffer);
+	// if (page == NULL){
+	// 	exit(-1);
+	// }
+	// if (page && !page->writable){
+	// 		exit(-1);
+	// 	}
 	int bytes_written = 0;
 	if (fd == 1){
 		//lock_acquire(&filesys_lock);
@@ -415,8 +468,10 @@ void close (int fd){
 	struct file *file = find_file_by_fd(fd);
 	if(file == NULL)
 		return;
+	// lock_acquire(&filesys_lock);
 	file_close(file);
 	del_fd(fd);
+	// lock_release(&filesys_lock);
 }
 
 
