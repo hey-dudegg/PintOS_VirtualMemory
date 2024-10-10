@@ -89,8 +89,3 @@ Thread, User Program, Virtual Memory를 구현하며 OS에 대한 이해를 증�
   - <img width="440" alt="image" src="https://github.com/user-attachments/assets/32e802fb-8a51-4729-b588-5c8e377fe64d">
 </details>
 
-# 🔎 개발환경
-
-개발 환경 설정은 다음과 같습니다.
-
-# [.env]
